@@ -77,18 +77,18 @@ def render_result(R):
         bg = NAVY if hi else "#EAF1FB"; lc = "#ccdcf5" if hi else "#3A5C8A"; vc = "#ffffff" if hi else NAVY
         h += f"<div style='background:{bg};border-radius:10px;padding:12px 14px;'><div style='font-size:12px;color:{lc};'>{lab}</div><div style='font-size:24px;font-weight:700;color:{vc};'>{val}</div></div>"
     st.markdown(h + "</div>", unsafe_allow_html=True)
-    # 이번에 갱신·신규된 거래처 목록
+    # 이번에 갱신·신규 처리된 거래처 (접기/펼치기)
     chg = [{"구분": s[8], "지역": s[0], "거래처": s[1], "상태": s[3],
             "계산서 추가": int(s[6]), "입금 추가": int(s[7])}
            for s in R["summary"] if (s[6] or s[7])]
-    st.markdown(f"**이번에 갱신·신규된 거래처 ({len(chg)}곳)**")
     if chg:
-        cdf = pd.DataFrame(chg).sort_values(["구분", "지역", "거래처"]).reset_index(drop=True)
-        st.dataframe(cdf, use_container_width=True, hide_index=True)
-        st.download_button("이 목록 CSV 다운로드", cdf.to_csv(index=False).encode("utf-8-sig"),
-                           file_name="갱신_신규_거래처.csv", mime="text/csv", key="dl_chg")
+        with st.expander(f"이번에 갱신·신규 처리된 거래처 {len(chg)}곳 자세히 보기 / 내려받기"):
+            cdf = pd.DataFrame(chg).sort_values(["구분", "지역", "거래처"]).reset_index(drop=True)
+            st.dataframe(cdf, use_container_width=True, hide_index=True)
+            st.download_button("이 목록 CSV 다운로드", cdf.to_csv(index=False).encode("utf-8-sig"),
+                               file_name="갱신_신규_거래처.csv", mime="text/csv", key="dl_chg")
     else:
-        st.caption("이번에 추가·변경된 거래처가 없습니다. (동일 자료 재처리 등)")
+        st.caption("이번에 갱신·신규 처리된 거래처가 없습니다. (동일 자료 재처리 등)")
     # 미배정
     if R["unassigned"]:
         st.warning(f"미배정 입금 {len(R['unassigned'])}건 (입금자명 매칭 실패 — 별칭표 보완 필요)")
