@@ -34,17 +34,14 @@ def detect_type(path):
     except Exception:
         return None
     flat = " ".join(str(x) for x in raw.values.flatten() if pd.notna(x))
-    if ("전자어음번호" in flat) or ("만기일자" in flat and "발행인" in flat):
+    if ("전자어음번호" in flat) or ("만기일자" in flat and "발행인" in flat) \
+       or ("판매채권" in flat) or ("채권번호" in flat) \
+       or ("만기일" in flat and ("구매기업" in flat or "채권금액" in flat)):
         return "어음"
     if ("공급자사업자등록번호" in flat) and ("공급받는자사업자등록번호" in flat):
-        # 매출=충해전기가 공급자 / 매입=충해전기가 공급받는자. 충해전기 사업자번호로 판별.
-        chunghae = {"113-81-14978"}  # 서울 충해전기 (화성은 별도, 양쪽 모두 공급자측이 우리)
-        # _parse_tax는 who_col로 '우리쪽' 컬럼을 잡음. 매출 list엔 공급자=충해전기가 반복됨.
-        # 휴리스틱: 공급자 컬럼에 충해전기(113-81-14978 등)가 다수면 매출, 공급받는자면 매입.
+        # 매출=충해전기가 공급자(값 고정) / 매입=충해전기가 공급받는자(값 고정). 한쪽이 거의 1개 값이면 그쪽이 우리.
         try:
-            df = pd.read_excel(path, header=None, dtype=object, nrows=200)
-            txt = df.astype(str)
-            # 헤더행 찾기
+            df = pd.read_excel(path, header=None, dtype=object, nrows=400)
             hr = None
             for i in range(min(15, len(df))):
                 row = " ".join(str(x) for x in df.iloc[i].tolist())
@@ -53,14 +50,13 @@ def detect_type(path):
                 cols = [str(x) for x in df.iloc[hr].tolist()]
                 sup_i = next((j for j, c in enumerate(cols) if "공급자사업자등록번호" in c and "받는" not in c), None)
                 buy_i = next((j for j, c in enumerate(cols) if "공급받는자사업자등록번호" in c), None)
-                body = df.iloc[hr+1:]
-                def share(ci):
-                    if ci is None: return 0
-                    vals = body.iloc[:, ci].astype(str)
-                    chu = sum(1 for v in vals if any(c in v for c in chunghae) or v.startswith("113-81") or v.startswith("123-")) 
-                    return chu
-                # 충해전기가 공급자측에 많으면 매출
-                return "매출" if share(sup_i) >= share(buy_i) else "매입"
+                body = df.iloc[hr + 1:]
+                def _uniq(ci):
+                    if ci is None: return 9999
+                    vals = [str(v).strip() for v in body.iloc[:, ci].tolist() if str(v).strip() not in ("", "nan", "None")]
+                    return len(set(vals)) if vals else 9999
+                su, bu = _uniq(sup_i), _uniq(buy_i)
+                return "매출" if su <= bu else "매입"
         except Exception:
             pass
         return "매출"
@@ -141,7 +137,8 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
                 if not bn: unassigned.append((loc, d["거래일"], d["입금액"], d["상대방명"], kind or "미배정")); continue
                 cust_dep[(loc, bn)].append(d)
         for fp in detected[loc]["어음"]:
-            for e in E.parse_eum(fp):
+            _bnk = next((b for b in ["하나", "신한", "기업", "농협", "우리", "국민"] if b in os.path.basename(fp)), "신한")
+            for e in E.parse_eum(fp, bank=_bnk):
                 kind, who = E.match_deposit(loc, e["발행인"], universe, alias)
                 bn = nb_map[loc].get(E.cname(who)) if who else None
                 if not bn: unassigned.append((loc, e["수취일"], e["어음금액"], e["발행인"]+"(어음)", "어음-미배정")); continue

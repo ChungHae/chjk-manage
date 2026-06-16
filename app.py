@@ -135,9 +135,12 @@ if ADMIN:
             line = " / ".join(f"{k} {len(v)}건" for k, v in d.items() if v)
             if line: st.write(f"- {loc}: {line}")
         nc = res.get("new_companies", [])
-        sc1, sc2 = st.columns([3, 1])
-        sc1.write("**상태 요약**: " + ("  ".join(f"{k} {v}" for k, v in res["status"].items()) or "-"))
-        sc2.metric("신규 업체", f"{len(nc)}곳")
+        st.markdown("**상태 요약**")
+        _order = ["완납", "진행", "미수", "장기미수"]
+        _mc = st.columns(len(_order) + 1)
+        _mc[0].metric("신규 업체", f"{len(nc)}곳")
+        for _i, _k in enumerate(_order):
+            _mc[_i + 1].metric(_k, res["status"].get(_k, 0))
         if nc: st.caption("신규: " + ", ".join(nc[:20]) + (" 외" if len(nc) > 20 else ""))
         if res["unassigned"]:
             st.warning(f"미배정 입금 {len(res['unassigned'])}건 (입금자명 매칭 실패 — 별칭표 보완 필요)")
