@@ -117,22 +117,17 @@ if ADMIN:
     st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
 
 with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False):
-    q = st.text_input("거래처명 검색", placeholder="예: 농협케미컬, 엘에스엠트론 …")
     files = all_company_files()
-    if q:
-        qn = q.replace(" ", "")
-        hit = [(loc, f, n) for loc, f, n in files if qn in n.replace(" ", "")]
-        if hit:
-            st.caption(f"{len(hit)}건 일치")
-            for loc, f, n in hit:
-                c1, c2 = st.columns([4, 1]); c1.write(f"[{loc}] {n}")
+    _opts = ["(거래처 입력·선택)"] + [f"[{loc}] {n}" for loc, f, n in files]
+    sel = st.selectbox(f"거래처명 일부만 입력하면 아래에 자동으로 후보가 나옵니다 (전체 {len(files)}곳)",
+                       _opts, index=0, key="cust_sel")
+    if sel != _opts[0]:
+        for loc, f, n in files:
+            if f"[{loc}] {n}" == sel:
                 with open(f, "rb") as fh:
-                    c2.download_button("다운로드", fh.read(), file_name=n, key="dl_" + f,
+                    st.download_button(f"📥 {n} 다운로드", fh.read(), file_name=n, key="dl_sel",
                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        else:
-            st.info("일치하는 거래처가 없습니다.")
-    else:
-        st.caption(f"전체 {len(files)}개 거래처. 위 칸에 업체명을 입력하면 해당 파일만 받을 수 있어요.")
+                break
 
 with st.expander("📥 현재 누적자료 전체 다운로드 (zip)", expanded=False):
     if os.path.isdir(DATA):
@@ -141,9 +136,10 @@ with st.expander("📥 현재 누적자료 전체 다운로드 (zip)", expanded=
 with st.expander("🛟 비상 복구 (직전본)", expanded=False):
     if os.path.exists(BACKUP_ZIP):
         st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
+        bc1, bc2 = st.columns(2)
         with open(BACKUP_ZIP, "rb") as fh:
-            st.download_button("직전본 다운로드 (zip)", fh.read(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
-        if ADMIN and st.button("⏪ 직전본으로 복구"):
+            bc1.download_button("직전본 다운로드 (zip)", fh.read(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
+        if ADMIN and bc2.button("⏪ 직전본으로 복구"):
             if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
                 if GIT_TOKEN: store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "restore previous baseline")
                 st.session_state.pop("result", None)
