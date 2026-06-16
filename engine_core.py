@@ -159,9 +159,11 @@ NONAR=re.compile(r"지방소득|환급|국세|부가가치|이자|결제|결:|�
 def match_deposit(loc, dep_name, universe, alias):
     """returns (kind, 거래처명 or None). 퍼지 매칭 없음."""
     key=(loc, cname(dep_name))
-    if key in alias: return ('별칭', alias[key])
+    if key in alias:
+        return ('제외', None) if str(alias[key]).strip()=='제외' else ('별칭', alias[key])
     key2=(loc, re.sub(r'\d+$','',cname(dep_name)))   # 숫자접미 제거(예: sk상사0508→sk상사) 별칭
-    if key2!=key and key2[1] and key2 in alias: return ('별칭', alias[key2])
+    if key2!=key and key2[1] and key2 in alias:
+        return ('제외', None) if str(alias[key2]).strip()=='제외' else ('별칭', alias[key2])
     if NONAR.search(str(dep_name)): return ('제외', None)
     nd=cname(dep_name); paren=re.findall(r"[(（]([^)）]+)",str(dep_name))
     hints=[nd]+[cname(p) for p in paren if cname(p)]
