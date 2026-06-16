@@ -35,8 +35,10 @@ def check_pw():
     header(full=False)
     pw_admin = st.secrets.get("password_admin", st.secrets.get("password", os.environ.get("APP_PW", "chunghae")))
     pw_view = st.secrets.get("password_view", os.environ.get("APP_PW_VIEW", ""))
-    x = st.text_input("비밀번호", type="password")
-    if st.button("로그인"):
+    with st.form("login_form"):
+        x = st.text_input("비밀번호", type="password")
+        submitted = st.form_submit_button("로그인")
+    if submitted:
         if x == pw_admin: st.session_state.update(auth=True, role="admin"); st.rerun()
         elif pw_view and x == pw_view: st.session_state.update(auth=True, role="view"); st.rerun()
         else: st.error("비밀번호가 틀립니다.")
@@ -64,10 +66,7 @@ ADMIN = st.session_state.get("role") == "admin"
 header()
 if ADMIN:
     st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
-else:
-    st.info("🔒 보기 전용 계정 — 자료 열람·다운로드만 가능합니다. (업로드·갱신·복구는 관리자 전용)")
 
-# ── 거래처 검색 · 개별 다운로드 ──
 with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False):
     q = st.text_input("거래처명 검색", placeholder="예: 농협케미컬, 엘에스엠트론 …")
     files = all_company_files()
@@ -86,12 +85,10 @@ with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False)
     else:
         st.caption(f"전체 {len(files)}개 거래처. 위 칸에 업체명을 입력하면 해당 파일만 받을 수 있어요.")
 
-# ── 현재 누적자료 전체 다운로드 ──
 with st.expander("📥 현재 누적자료 전체 다운로드 (zip)", expanded=False):
     if os.path.isdir(DATA):
         st.download_button("전체 누적본 다운로드", zip_dir(DATA), file_name="누적자료_현재본.zip", mime="application/zip")
 
-# ── 비상 복구: 직전본 ──
 with st.expander("🛟 비상 복구 (직전본)", expanded=False):
     if os.path.exists(BACKUP_ZIP):
         st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
@@ -101,12 +98,9 @@ with st.expander("🛟 비상 복구 (직전본)", expanded=False):
             if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
                 if GIT_TOKEN: store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "restore previous baseline")
                 st.success("직전본으로 복구했습니다."); st.rerun()
-        elif not ADMIN:
-            st.caption("복구는 관리자 전용입니다.")
     else:
         st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
 
-# ── 업로드 & 처리 (관리자 전용) ──
 if ADMIN:
     st.subheader("자료 업로드")
     col1, col2 = st.columns(2)
@@ -154,7 +148,7 @@ if ADMIN:
             st.download_button("⚠ 검증 전 결과 받아보기 (zip)", zip_dir(out_dir),
                                file_name="누적자료_검증전.zip", mime="application/zip")
         else:
-            store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)   # 현재본 → _직전본.zip 백업 후 data.zip 갱신
+            store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
             open(BASIS, "w", encoding="utf-8").write(datetime.date.today().isoformat())
             saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "update baseline via app")
             st.success("검증 통과 — 누적본을 갱신했고 직전본을 백업했습니다." +
