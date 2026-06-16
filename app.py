@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os, io, zipfile, tempfile, glob, datetime
 import streamlit as st
+import pandas as pd
 import pipeline, store
 
 st.set_page_config(page_title="충해전기 관리시스템", page_icon="📒", layout="wide")
@@ -44,13 +45,13 @@ def check_pw():
         else: st.error("비밀번호가 틀립니다.")
     return False
 
-def zip_dir(d):
+def zip_bytes(d):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for root, _, files in os.walk(d):
             for fn in files:
                 fp = os.path.join(root, fn); z.write(fp, os.path.relpath(fp, d))
-    buf.seek(0); return buf
+    return buf.getvalue()
 
 def all_company_files():
     out = []
@@ -60,6 +61,53 @@ def all_company_files():
             if n.startswith("_") or n.startswith("~$"): continue
             out.append((loc, f, n))
     return out
+
+def render_result(R):
+    st.divider()
+    st.write("**파일 판별 결과**")
+    for loc, d in R["detected"].items():
+        line = " / ".join(f"{k} {len(v)}건" for k, v in d.items() if v)
+        if line: st.write(f"- {loc}: {line}")
+    # 상태 카드
+    nc = R["new_companies"]; stt = R["status"]
+    st.markdown("**상태 요약**")
+    cards = [("신규 업체", f"{len(nc)}곳", True)] + [(k, str(stt.get(k, 0)), False) for k in ["완납", "진행", "미수", "장기미수"]]
+    h = "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:4px 0 14px;'>"
+    for lab, val, hi in cards:
+        bg = NAVY if hi else "#EAF1FB"; lc = "#ccdcf5" if hi else "#3A5C8A"; vc = "#ffffff" if hi else NAVY
+        h += f"<div style='background:{bg};border-radius:10px;padding:12px 14px;'><div style='font-size:12px;color:{lc};'>{lab}</div><div style='font-size:24px;font-weight:700;color:{vc};'>{val}</div></div>"
+    st.markdown(h + "</div>", unsafe_allow_html=True)
+    # 이번에 갱신·신규된 거래처 목록
+    chg = [{"구분": s[8], "지역": s[0], "거래처": s[1], "상태": s[3],
+            "계산서 추가": int(s[6]), "입금 추가": int(s[7])}
+           for s in R["summary"] if (s[6] or s[7])]
+    st.markdown(f"**이번에 갱신·신규된 거래처 ({len(chg)}곳)**")
+    if chg:
+        cdf = pd.DataFrame(chg).sort_values(["구분", "지역", "거래처"]).reset_index(drop=True)
+        st.dataframe(cdf, use_container_width=True, hide_index=True)
+        st.download_button("이 목록 CSV 다운로드", cdf.to_csv(index=False).encode("utf-8-sig"),
+                           file_name="갱신_신규_거래처.csv", mime="text/csv", key="dl_chg")
+    else:
+        st.caption("이번에 추가·변경된 거래처가 없습니다. (동일 자료 재처리 등)")
+    # 미배정
+    if R["unassigned"]:
+        st.warning(f"미배정 입금 {len(R['unassigned'])}건 (입금자명 매칭 실패 — 별칭표 보완 필요)")
+        with st.expander(f"미배정 입금 {len(R['unassigned'])}건 자세히 보기 / 내려받기"):
+            udf = pd.DataFrame(R["unassigned"], columns=["지역", "날짜", "금액", "입금자명", "유형"])
+            udf = udf.sort_values(["지역", "입금자명", "날짜"]).reset_index(drop=True)
+            st.dataframe(udf, use_container_width=True, hide_index=True)
+            st.download_button("미배정 목록 CSV 다운로드", udf.to_csv(index=False).encode("utf-8-sig"),
+                               file_name="미배정입금.csv", mime="text/csv", key="dl_un")
+    # 최종 결과 + 다운로드
+    if R["ok"]:
+        st.success("검증 통과 — 누적본을 갱신했고 직전본을 백업했습니다." + R["saved_note"])
+        st.download_button("📥 갱신된 누적본 다운로드 (zip)", R["zip_bytes"],
+                           file_name="누적자료_최신본.zip", mime="application/zip", type="primary", key="dl_final")
+    else:
+        st.error("검증 실패 — 누적본을 갱신하지 않았습니다. 직전본은 그대로 유지됩니다.")
+        st.write(R["probs"][:15])
+        st.download_button("⚠ 검증 전 결과 받아보기 (zip)", R["zip_bytes"],
+                           file_name="누적자료_검증전.zip", mime="application/zip", key="dl_final")
 
 if not check_pw(): st.stop()
 ADMIN = st.session_state.get("role") == "admin"
@@ -87,16 +135,17 @@ with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False)
 
 with st.expander("📥 현재 누적자료 전체 다운로드 (zip)", expanded=False):
     if os.path.isdir(DATA):
-        st.download_button("전체 누적본 다운로드", zip_dir(DATA), file_name="누적자료_현재본.zip", mime="application/zip")
+        st.download_button("전체 누적본 다운로드", zip_bytes(DATA), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
 
 with st.expander("🛟 비상 복구 (직전본)", expanded=False):
     if os.path.exists(BACKUP_ZIP):
         st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
         with open(BACKUP_ZIP, "rb") as fh:
-            st.download_button("직전본 다운로드 (zip)", fh.read(), file_name="누적자료_직전본.zip", mime="application/zip")
+            st.download_button("직전본 다운로드 (zip)", fh.read(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
         if ADMIN and st.button("⏪ 직전본으로 복구"):
             if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
                 if GIT_TOKEN: store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "restore previous baseline")
+                st.session_state.pop("result", None)
                 st.success("직전본으로 복구했습니다."); st.rerun()
     else:
         st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
@@ -128,43 +177,20 @@ if ADMIN:
             except Exception as e:
                 st.error(f"처리 오류: {e}"); st.stop()
             ok, probs = pipeline.verify(out_dir, DATA)
+            if ok:
+                store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
+                open(BASIS, "w", encoding="utf-8").write(datetime.date.today().isoformat())
+                saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "update baseline via app")
+                note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
+                zb = zip_bytes(DATA)
+            else:
+                note = ""; zb = zip_bytes(out_dir)
+        st.session_state["result"] = {
+            "detected": res["detected"], "status": res["status"], "new_companies": res.get("new_companies", []),
+            "summary": res["summary"], "unassigned": res["unassigned"],
+            "ok": ok, "probs": probs, "zip_bytes": zb, "saved_note": note,
+        }
+        log_area.empty()
 
-        st.write("**파일 판별 결과**")
-        for loc in uploads:
-            d = res["detected"].get(loc, {})
-            line = " / ".join(f"{k} {len(v)}건" for k, v in d.items() if v)
-            if line: st.write(f"- {loc}: {line}")
-        nc = res.get("new_companies", [])
-        _stt = res["status"]
-        st.markdown("**상태 요약**")
-        _cards = [("신규 업체", f"{len(nc)}곳", True)] + [(_k, str(_stt.get(_k, 0)), False) for _k in ["완납", "진행", "미수", "장기미수"]]
-        _h = "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:4px 0 14px;'>"
-        for _lab, _val, _hi in _cards:
-            _bg = NAVY if _hi else "#EAF1FB"; _lc = "#ccdcf5" if _hi else "#3A5C8A"; _vc = "#ffffff" if _hi else NAVY
-            _h += f"<div style='background:{_bg};border-radius:10px;padding:12px 14px;'><div style='font-size:12px;color:{_lc};'>{_lab}</div><div style='font-size:24px;font-weight:700;color:{_vc};'>{_val}</div></div>"
-        _h += "</div>"
-        st.markdown(_h, unsafe_allow_html=True)
-        if nc: st.caption("신규: " + ", ".join(nc[:20]) + (" 외" if len(nc) > 20 else ""))
-        if res["unassigned"]:
-            st.warning(f"미배정 입금 {len(res['unassigned'])}건 (입금자명 매칭 실패 — 별칭표 보완 필요)")
-            with st.expander(f"미배정 입금 {len(res['unassigned'])}건 자세히 보기 / 내려받기"):
-                import pandas as _pd
-                _udf = _pd.DataFrame(res["unassigned"], columns=["지역", "날짜", "금액", "입금자명", "유형"])
-                _udf = _udf.sort_values(["지역", "입금자명", "날짜"]).reset_index(drop=True)
-                st.dataframe(_udf, use_container_width=True, hide_index=True)
-                st.download_button("미배정 목록 CSV 다운로드", _udf.to_csv(index=False).encode("utf-8-sig"),
-                                   file_name="미배정입금.csv", mime="text/csv")
-
-        if not ok:
-            st.error("검증 실패 — 누적본을 갱신하지 않았습니다. 직전본은 그대로 유지됩니다.")
-            st.write(probs[:15])
-            st.download_button("⚠ 검증 전 결과 받아보기 (zip)", zip_dir(out_dir),
-                               file_name="누적자료_검증전.zip", mime="application/zip")
-        else:
-            store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
-            open(BASIS, "w", encoding="utf-8").write(datetime.date.today().isoformat())
-            saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "update baseline via app")
-            st.success("검증 통과 — 누적본을 갱신했고 직전본을 백업했습니다." +
-                       ("  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"))
-            st.download_button("📥 갱신된 누적본 다운로드 (zip)", zip_dir(DATA),
-                               file_name="누적자료_최신본.zip", mime="application/zip", type="primary")
+    if st.session_state.get("result"):
+        render_result(st.session_state["result"])
