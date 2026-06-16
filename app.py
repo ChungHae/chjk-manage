@@ -113,6 +113,7 @@ if not check_pw(): st.stop()
 ADMIN = st.session_state.get("role") == "admin"
 header()
 if ADMIN:
+    st.markdown(f"<div style='margin:-6px 0 8px;'><span style='background:{NAVY};color:#fff;font-size:12px;font-weight:600;padding:3px 12px;border-radius:6px;'>🔑 관리자 계정</span></div>", unsafe_allow_html=True)
     st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
 
 with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False):
