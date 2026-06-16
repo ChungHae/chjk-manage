@@ -147,6 +147,13 @@ if ADMIN:
         if nc: st.caption("신규: " + ", ".join(nc[:20]) + (" 외" if len(nc) > 20 else ""))
         if res["unassigned"]:
             st.warning(f"미배정 입금 {len(res['unassigned'])}건 (입금자명 매칭 실패 — 별칭표 보완 필요)")
+            with st.expander(f"미배정 입금 {len(res['unassigned'])}건 자세히 보기 / 내려받기"):
+                import pandas as _pd
+                _udf = _pd.DataFrame(res["unassigned"], columns=["지역", "날짜", "금액", "입금자명", "유형"])
+                _udf = _udf.sort_values(["지역", "입금자명", "날짜"]).reset_index(drop=True)
+                st.dataframe(_udf, use_container_width=True, hide_index=True)
+                st.download_button("미배정 목록 CSV 다운로드", _udf.to_csv(index=False).encode("utf-8-sig"),
+                                   file_name="미배정입금.csv", mime="text/csv")
 
         if not ok:
             st.error("검증 실패 — 누적본을 갱신하지 않았습니다. 직전본은 그대로 유지됩니다.")
