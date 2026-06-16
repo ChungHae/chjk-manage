@@ -47,7 +47,10 @@ def _bdate(v):
     if v is None or (isinstance(v,float) and pd.isna(v)): return None
     s=str(v).strip().split("\n")[0].replace(".","-").replace("/","-")
     m=re.search(r"(\d{4})-(\d{1,2})-(\d{1,2})",s)
-    return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}" if m else None
+    if m: return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+    m=re.search(r"\b(\d{4})(\d{2})(\d{2})\b",s)
+    if m: return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    return None
 
 def parse_bank(path, bank):
     raw=pd.read_excel(path,header=None,dtype=object); hr=None
@@ -117,17 +120,32 @@ def parse_sales(path): return _parse_tax(path,"공급받는자")
 def parse_purchase(path): return _parse_tax(path,"공급자")
 
 def parse_eum(path, bank="신한"):
-    """어음 수취내역 → 발행인(거래처)·어음금액·수취일·만기일. 수취일에 입금처리."""
-    df=pd.read_excel(path,header=0,dtype=object)
+    """어음/판매채권 수취내역 → 발행인·금액·수취일·만기일. 신한(수취내역)·하나(판매채권내역조회) 형식 모두 지원."""
+    raw=pd.read_excel(path,header=None,dtype=object)
+    hr=None
+    for i in range(min(15,len(raw))):
+        row=" ".join(str(x) for x in raw.iloc[i].tolist())
+        if ("만기" in row) and (("발행인" in row) or ("구매기업" in row)): hr=i; break
+    df=pd.read_excel(path,header=(hr if hr is not None else 0),dtype=object)
+    cols=list(df.columns)
+    def find(*keys):
+        for k in keys:
+            for c in cols:
+                if k in str(c): return c
+        return None
+    c_name=find("발행인","구매기업"); c_amt=find("어음금액","채권금액","금액")
+    c_recv=find("수취일","발행일"); c_mat=find("만기일","만기"); c_stat=find("상태")
     out=[]
+    if c_name is None: return out
     for _,r in df.iterrows():
-        fa=r.get('발행인')
+        fa=r.get(c_name)
         if fa is None or (isinstance(fa,float) and pd.isna(fa)): continue
-        if str(fa).strip() in ('','합계','nan'): continue
-        amt=_num(r.get('어음금액')); recv=_bdate(r.get('수취일자')); mat=_bdate(r.get('만기일자'))
+        if str(fa).strip() in ('','합계','총계','소계','nan'): continue
+        amt=_num(r.get(c_amt)); recv=_bdate(r.get(c_recv)); mat=_bdate(r.get(c_mat))
         if not recv or amt<=0: continue
-        out.append(dict(발행인=re.sub(r"[（）()]","",str(fa)).replace("주식회사","").strip(),
-                        어음금액=amt, 수취일=recv, 만기일=mat, 상태=str(r.get('상태','')).strip(), bank=f"{bank} (어음)"))
+        out.append(dict(발행인=str(fa).strip(),
+                        어음금액=amt, 수취일=recv, 만기일=mat,
+                        상태=str(r.get(c_stat,'') if c_stat else '').strip(), bank=f"{bank} (어음)"))
     return out
 
 # ---------- 매칭 (퍼지 금지) ----------
