@@ -304,6 +304,12 @@ def status(d,today=TODAY,rule="익월말"):
     if today<=due: return "기한내"
     return "미수" if today<=longd else "장기미수"
 
+def resolve_rule(rule, sup):
+    """조건부 기준 '공급>{금액}?{참}:{거짓}' 을 계산서 공급가로 풀어 실제 기준 문자열 반환."""
+    m=re.match(r"공급>(\d+)\?(.+):(.+)$", str(rule).replace(" ",""))
+    if m: return m.group(2) if (sup or 0) > int(m.group(1)) else m.group(3)
+    return rule
+
 def compute_unpaid(ws, C, exc=None):
     """계산서별 미수액 = 정산액(F) - 입금합(I). 정산/차액 수식을 파싱해 그룹 단위로 계산.
     반환: [(작성일, 미수액)]. 예외(작성일,합계) 행은 제외. 단일 워크북(수식)만 필요."""

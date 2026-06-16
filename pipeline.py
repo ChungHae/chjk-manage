@@ -131,7 +131,8 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
     cust_dep = defaultdict(list); unassigned = []
     for loc in uploads_by_loc:
         for fp in detected[loc]["은행"]:
-            for d in E.parse_bank(fp, "은행"):
+            _bnk = next((b for b in ["신한", "기업", "하나", "농협", "우리", "국민", "외환", "수협", "산업", "씨티", "케이뱅크", "카카오", "토스"] if b in os.path.basename(fp)), "은행")
+            for d in E.parse_bank(fp, _bnk):
                 kind, who = E.match_deposit(loc, d["상대방명"], universe, alias)
                 if kind == "제외": continue
                 bn = nb_map[loc].get(E.cname(who)) if who else None
@@ -176,9 +177,13 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
             tmp = os.path.join(work, "_o.xlsx"); exc = exceptions.get(bn, set())
             try: res = E.accumulate(path, inv, nd, loc, tmp, exc)
             except Exception as ex: flags.append((loc, name, f"오류:{ex}")); continue
-            wsf = load_workbook(tmp).active; worst = "완납"; out_amt = 0; earliest = None
-            for a, bal in E.unpaid_after_credit(wsf, E.cols(wsf), exc):
-                st = E.status(a, rule=duerules.get(bn, "익월말"))
+            wsf = load_workbook(tmp).active; Cf = E.cols(wsf); worst = "완납"; out_amt = 0; earliest = None
+            supmap = {}
+            for r in range(3, wsf.max_row + 1):
+                da = E.pdate(wsf.cell(r, Cf['작성']).value); sv = wsf.cell(r, Cf['공급']).value
+                if da and isinstance(sv, (int, float)): supmap[da.isoformat()] = supmap.get(da.isoformat(), 0) + sv
+            for a, bal in E.unpaid_after_credit(wsf, Cf, exc):
+                st = E.status(a, rule=E.resolve_rule(duerules.get(bn, "익월말"), supmap.get(a.isoformat(), 0)))
                 if st in ("미수", "장기미수"):
                     out_amt += bal
                     if earliest is None or a < earliest: earliest = a
