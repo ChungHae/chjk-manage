@@ -135,12 +135,15 @@ if ADMIN:
             line = " / ".join(f"{k} {len(v)}건" for k, v in d.items() if v)
             if line: st.write(f"- {loc}: {line}")
         nc = res.get("new_companies", [])
+        _stt = res["status"]
         st.markdown("**상태 요약**")
-        _order = ["완납", "진행", "미수", "장기미수"]
-        _mc = st.columns(len(_order) + 1)
-        _mc[0].metric("신규 업체", f"{len(nc)}곳")
-        for _i, _k in enumerate(_order):
-            _mc[_i + 1].metric(_k, res["status"].get(_k, 0))
+        _cards = [("신규 업체", f"{len(nc)}곳", True)] + [(_k, str(_stt.get(_k, 0)), False) for _k in ["완납", "진행", "미수", "장기미수"]]
+        _h = "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:4px 0 14px;'>"
+        for _lab, _val, _hi in _cards:
+            _bg = NAVY if _hi else "#EAF1FB"; _lc = "#ccdcf5" if _hi else "#3A5C8A"; _vc = "#ffffff" if _hi else NAVY
+            _h += f"<div style='background:{_bg};border-radius:10px;padding:12px 14px;'><div style='font-size:12px;color:{_lc};'>{_lab}</div><div style='font-size:24px;font-weight:700;color:{_vc};'>{_val}</div></div>"
+        _h += "</div>"
+        st.markdown(_h, unsafe_allow_html=True)
         if nc: st.caption("신규: " + ", ".join(nc[:20]) + (" 외" if len(nc) > 20 else ""))
         if res["unassigned"]:
             st.warning(f"미배정 입금 {len(res['unassigned'])}건 (입금자명 매칭 실패 — 별칭표 보완 필요)")

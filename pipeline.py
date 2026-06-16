@@ -8,7 +8,8 @@ import pandas as pd
 from openpyxl import load_workbook, Workbook
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_ep = os.path.join(_HERE, "engine", "engine.py")
+_ep = os.path.join(_HERE, "engine_core.py")
+if not os.path.exists(_ep): _ep = os.path.join(_HERE, "engine", "engine.py")
 E = types.ModuleType("engine"); exec(compile(open(_ep, encoding="utf-8").read(), _ep, "exec"), E.__dict__)
 
 # ---------- 파일 변환·판별 ----------
