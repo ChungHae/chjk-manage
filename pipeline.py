@@ -99,6 +99,11 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
             ad = E.pdate(r[1])
             if ad: exceptions[str(r[0]).strip()].add((ad.isoformat(), int(r[2])))
     excluded = set(str(r[0]).strip() for r in _load_tbl("_제외거래처표.xlsx", "제외거래처", [3]) if r[0])
+    reassign = {}
+    for r in _load_tbl("_입금재배정표.xlsx", "입금재배정", [1, 2, 4, 8]):
+        ad = E.pdate(r[0])
+        if ad and r[1] and r[2] and r[3]:
+            reassign[(ad.isoformat(), int(r[1]))] = (str(r[3]).strip(), str(r[2]).strip())
     # 3) 기존 누적본 인덱스
     exist = {}; universe = defaultdict(dict)
     for f in glob.glob(os.path.join(data_dir, "서울", "*.xlsx")) + glob.glob(os.path.join(data_dir, "화성", "*.xlsx")):
@@ -133,6 +138,8 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
         for fp in detected[loc]["은행"]:
             _bnk = next((b for b in ["신한", "기업", "하나", "농협", "우리", "국민", "외환", "수협", "산업", "씨티", "케이뱅크", "카카오", "토스"] if b in os.path.basename(fp)), "은행")
             for d in E.parse_bank(fp, _bnk):
+                _ra = reassign.get((d["거래일"], int(d["입금액"])))
+                if _ra: cust_dep[_ra].append(d); continue
                 kind, who = E.match_deposit(loc, d["상대방명"], universe, alias)
                 if kind == "제외": continue
                 bn = nb_map[loc].get(E.cname(who)) if who else None
@@ -141,6 +148,9 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
         for fp in detected[loc]["어음"]:
             _bnk = next((b for b in ["하나", "신한", "기업", "농협", "우리", "국민"] if b in os.path.basename(fp)), "신한")
             for e in E.parse_eum(fp, bank=_bnk):
+                _d = {"거래일": e["수취일"], "입금액": e["어음금액"], "상대방명": e["발행인"], "은행": e.get("bank", ""), "만기": e["만기일"]}
+                _ra = reassign.get((e["수취일"], int(e["어음금액"])))
+                if _ra: cust_dep[_ra].append(_d); continue
                 kind, who = E.match_deposit(loc, e["발행인"], universe, alias)
                 bn = nb_map[loc].get(E.cname(who)) if who else None
                 if not bn: unassigned.append((loc, e["수취일"], e["어음금액"], e["발행인"]+"(어음)", "어음-미배정")); continue
