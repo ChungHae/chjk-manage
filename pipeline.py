@@ -198,6 +198,22 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
                 "sup": x["공급가"] if x["공급가"] is not None else round(x["합계"]/1.1), "amt": x["합계"]})
     summary = []; flags = []
     PRE = {"장기미수": "🔴장기미수", "미수": "🟠미수", "진행": "🟡진행", "완납": "✅완납"}
+    # 기준일 = 업로드 자료의 최근 거래일(은행·세금계산서·어음 수취일; 미래 만기 제외) → 미수 판정 기준
+    _bc = []
+    for loc in uploads_by_loc:
+        for fp in detected[loc]["은행"]:
+            d = _col_max_date(fp, ["거래일시", "거래일", "거래일자"])
+            if d: _bc.append(d)
+        for fp in detected[loc]["매출"] + detected[loc]["매입"]:
+            d = _col_max_date(fp, ["작성일자", "작성일"])
+            if d: _bc.append(d)
+        for fp in detected[loc]["어음"]:
+            try:
+                for e in E.parse_eum(fp):
+                    if e.get("수취일"): _bc.append(e["수취일"])
+            except Exception: pass
+    basis = max(_bc) if _bc else None
+    _ref = basis or date.today()   # 미수 판정 기준일(자료 최근거래일). 날짜만 지나도 미수로 오판하지 않도록 today 대신 사용
     for loc in uploads_by_loc:
         os.makedirs(os.path.join(out_dir, loc), exist_ok=True)
         bset = set(bn for (l, bn) in cust_inv if l == loc) | set(bn for (l, bn) in cust_dep if l == loc) | set(bn for (l, bn) in exist if l == loc)
@@ -228,7 +244,7 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
                 da = E.pdate(wsf.cell(r, Cf['작성']).value); sv = wsf.cell(r, Cf['공급']).value
                 if da and isinstance(sv, (int, float)): supmap[da.isoformat()] = supmap.get(da.isoformat(), 0) + sv
             for a, bal in E.unpaid_after_credit(wsf, Cf, exc):
-                st = E.status(a, rule=E.resolve_rule(duerules.get(bn, "익월말"), supmap.get(a.isoformat(), 0)))
+                st = E.status(a, today=_ref, rule=E.resolve_rule(duerules.get(bn, "익월말"), supmap.get(a.isoformat(), 0)))
                 if st in ("미수", "장기미수"):
                     out_amt += bal
                     if earliest is None or a < earliest: earliest = a
@@ -248,21 +264,6 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
     for tbl in glob.glob(os.path.join(data_dir, "_*.xlsx")): shutil.copy(tbl, os.path.join(out_dir, os.path.basename(tbl)))
     status = Counter(s[3] for s in summary)
     new_companies = [s[1] for s in summary if s[8] == "신규"]
-    # 기준일 = 업로드 자료의 최근 거래일/작성일(은행·세금계산서 스캔 + 어음 수취일; 미래 만기 제외)
-    _bc = []
-    for loc in uploads_by_loc:
-        for fp in detected[loc]["은행"]:
-            d = _col_max_date(fp, ["거래일시", "거래일", "거래일자"])
-            if d: _bc.append(d)
-        for fp in detected[loc]["매출"] + detected[loc]["매입"]:
-            d = _col_max_date(fp, ["작성일자", "작성일"])
-            if d: _bc.append(d)
-        for fp in detected[loc]["어음"]:
-            try:
-                for e in E.parse_eum(fp):
-                    if e.get("수취일"): _bc.append(e["수취일"])
-            except Exception: pass
-    basis = max(_bc) if _bc else None
     return dict(summary=summary, detected=detected, status=dict(status), unassigned=unassigned,
                 flags=flags, out_dir=out_dir, new_companies=new_companies, basis=basis)
 

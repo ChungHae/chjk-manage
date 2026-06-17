@@ -10,7 +10,7 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.cell.cell import MergedCell
 from openpyxl.utils import get_column_letter
 
-TODAY = date(2026, 6, 9)
+TODAY = date.today()
 STD_FONT = Font(name="맑은 고딕", size=9)
 HDR_FONT = Font(name="맑은 고딕", size=9, bold=True)
 CEN = Alignment(horizontal="center", vertical="center")
