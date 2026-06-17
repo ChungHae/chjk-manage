@@ -4,3 +4,5 @@ backgroundColor="#FFFFFF"
 secondaryBackgroundColor="#EAF1FB"
 textColor="#1A1A1A"
 font="sans serif"
+[client]
+toolbarMode="minimal"
