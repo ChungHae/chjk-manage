@@ -45,12 +45,23 @@ def check_pw():
         else: st.error("비밀번호가 틀립니다.")
     return False
 
-def zip_bytes(d):
+def zip_bytes(d, dirs_only=None):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for root, _, files in os.walk(d):
             for fn in files:
-                fp = os.path.join(root, fn); z.write(fp, os.path.relpath(fp, d))
+                fp = os.path.join(root, fn); rel = os.path.relpath(fp, d).replace("\\", "/")
+                if dirs_only and not any(rel.startswith(p + "/") for p in dirs_only): continue
+                z.write(fp, rel)
+    return buf.getvalue()
+
+def zip_backup_customers():
+    """직전본.zip에서 서울/화성 거래처 파일만 추려 재압축(지원표 제외)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(BACKUP_ZIP) as src, zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for n in src.namelist():
+            nn = n.replace("\\", "/")
+            if nn.startswith("서울/") or nn.startswith("화성/"): z.writestr(n, src.read(n))
     return buf.getvalue()
 
 def all_company_files():
@@ -131,14 +142,13 @@ with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False)
 
 with st.expander("📥 현재 누적자료 전체 다운로드 (zip)", expanded=False):
     if os.path.isdir(DATA):
-        st.download_button("전체 누적본 다운로드", zip_bytes(DATA), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
+        st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
 
 with st.expander("🛟 비상 복구 (직전본)", expanded=False):
     if os.path.exists(BACKUP_ZIP):
         st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
         bc1, bc2 = st.columns(2)
-        with open(BACKUP_ZIP, "rb") as fh:
-            bc1.download_button("직전본 다운로드 (zip)", fh.read(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
+        bc1.download_button("직전본 다운로드 (서울·화성)", zip_backup_customers(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
         if ADMIN and bc2.button("⏪ 직전본으로 복구"):
             if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
                 if GIT_TOKEN: store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "restore previous baseline")
