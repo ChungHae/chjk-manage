@@ -56,3 +56,21 @@ def git_commit_push(repo_dir, token, slug, msg):
         return (True, "저장 완료")
     except subprocess.CalledProcessError as e:
         return (False, (e.stderr or b"").decode("utf-8", "ignore")[:300])
+
+def replace_customer_files(work_dir, items, data_zip, backup_zip):
+    """관리자가 직접 수정한 거래처 파일로 교체. items=[(loc, filename, bytes)]. 교체 전 직전본 백업 후 data.zip 재생성.
+    같은 사업자번호의 기존 파일은 삭제(상태 prefix가 달라져도 중복 안 생기게)."""
+    import re as _re
+    _zip_dir(work_dir, backup_zip)              # 교체 전 백업
+    n = 0
+    for loc, fn, content in items:
+        d = os.path.join(work_dir, loc); os.makedirs(d, exist_ok=True)
+        m = _re.search(r"\((\d{3}-\d{2}-\d{5})\)", fn)
+        if m:
+            for old in glob.glob(os.path.join(d, f"*({m.group(1)}).xlsx")):
+                try: os.remove(old)
+                except OSError: pass
+        with open(os.path.join(d, fn), "wb") as f: f.write(content)
+        n += 1
+    _zip_dir(work_dir, data_zip)
+    return n

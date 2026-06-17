@@ -2,6 +2,7 @@
 import os, io, zipfile, tempfile, glob, datetime, re
 import streamlit as st
 import pandas as pd
+from openpyxl import load_workbook
 import pipeline, store
 
 st.set_page_config(page_title="충해전기 관리시스템", page_icon="📒", layout="wide")
@@ -165,6 +166,29 @@ with st.expander("🛟 비상 복구 (직전본)", expanded=False):
         st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
 
 if ADMIN:
+    with st.expander("✏️ 거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=False):
+        st.caption("거래처 파일을 받아 직접 고친 뒤 여기 올리면 그 거래처를 교체합니다. 사업자번호로 자동 인식하며, 교체 전 직전본이 백업됩니다.")
+        m_ups = st.file_uploader("수정한 거래처 파일(.xlsx) 업로드", accept_multiple_files=True, type=["xlsx"], key="manual_edit")
+        if m_ups:
+            parsed = []
+            for uf in m_ups:
+                nm = uf.name; raw = bytes(uf.getbuffer())
+                mb = re.search(r"\((\d{3}-\d{2}-\d{5})\)", nm)
+                ml = re.search(r"(서울|화성)\)", nm)
+                loc = ml.group(1) if ml else ("화성" if "화성" in nm else "서울")
+                try: load_workbook(io.BytesIO(raw)); ok = True
+                except Exception: ok = False
+                parsed.append((loc, nm, (mb.group(1) if mb else None), ok, raw))
+            for loc, nm, biz, ok, _ in parsed:
+                st.write(f"- [{loc}] {nm} → " + ("✅ 교체 준비됨" if (ok and biz) else "⚠️ 사업자번호/형식 확인 필요(건너뜀)"))
+            good = [(loc, nm, b) for loc, nm, biz, ok, b in parsed if ok and biz]
+            if good and st.button(f"{len(good)}개 거래처 교체 (직전본 백업 후)", type="primary", key="manual_apply"):
+                store.replace_customer_files(DATA, good, DATA_ZIP, BACKUP_ZIP)
+                saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "manual edit replace")
+                st.session_state.pop("result", None)
+                st.success(f"{len(good)}개 거래처 교체 완료." + ("  (GitHub 영구저장)" if saved else f"  (미저장: {msg})"))
+                st.rerun()
+
     st.subheader("자료 업로드")
     col1, col2 = st.columns(2)
     with col1:
