@@ -586,11 +586,11 @@ def accumulate(existing_path, new_invoices, new_deposits, issuer, out_path, exce
         from collections import Counter as _Counter
         exist_cnt=_Counter()
     # 신규 계산서 추가 (마지막 데이터행 다음, 중복 제외)
-    cur=last_data_row(ws,C)
+    cur=last_data_row(ws,C); _added_inv=0
     for inv in sorted(new_invoices,key=lambda x:x['date']):
         k=(inv['date'],int(round(inv['sup'])))
         if exist_cnt.get(k,0)>0: exist_cnt[k]-=1; continue
-        cur+=1; r=cur
+        cur+=1; r=cur; _added_inv+=1
         ws.cell(r,C['작성'],inv['date'])
         if issuer_col: ws.cell(r,C['발행'],issuer)
         ws.cell(r,C['공급'],inv['sup'])
@@ -678,7 +678,7 @@ def accumulate(existing_path, new_invoices, new_deposits, issuer, out_path, exce
     apply_jeolsang(ws,C)
     apply_formats(ws,C); apply_font(ws); autofit(ws,C['n']); ws.freeze_panes='A3'
     wb.save(out_path)
-    return dict(new_inv=len(new_invoices), new_dep=len(new_deposits), flags=flags)
+    return dict(new_inv=_added_inv, new_dep=len(new_deposits), flags=flags)
 
 def validate(path):
     """구조 점검: '월계' 헤더 잔존, 데이터 중간 공백행."""
