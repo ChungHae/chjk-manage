@@ -122,6 +122,11 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
         if r[0] and r[1] and r[2]:
             ad = E.pdate(r[1])
             if ad: exceptions[str(r[0]).strip()].add((ad.isoformat(), int(r[2])))
+    eum_tols = {}
+    for r in _load_tbl("_어음근사매칭표.xlsx", "어음근사", [3, 4]):
+        if r[0] and r[1]:
+            try: eum_tols[str(r[0]).strip()] = int(r[1])
+            except Exception: pass
     excluded = set(str(r[0]).strip() for r in _load_tbl("_제외거래처표.xlsx", "제외거래처", [3]) if r[0])
     reassign = {}
     for r in _load_tbl("_입금재배정표.xlsx", "입금재배정", [1, 2, 4, 8]):
@@ -215,7 +220,7 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
                 nd.append(ent)
             if not inv and not nd and not path: continue
             tmp = os.path.join(work, "_o.xlsx"); exc = exceptions.get(bn, set())
-            try: res = E.accumulate(path, inv, nd, loc, tmp, exc)
+            try: res = E.accumulate(path, inv, nd, loc, tmp, exc, eum_tol=eum_tols.get(bn, 0))
             except Exception as ex: flags.append((loc, name, f"오류:{ex}")); continue
             wsf = load_workbook(tmp).active; Cf = E.cols(wsf); worst = "완납"; out_amt = 0; earliest = None
             supmap = {}

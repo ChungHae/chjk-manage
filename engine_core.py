@@ -535,8 +535,9 @@ def _rebuild_loose_tail(ws, C, leftover, issuer_col, EL):
             ws.cell(rr,C['차액'], -int(it[6]) if isinstance(it[6],(int,float)) else None)   # 미배분 입금 = 과입금(-입금), 고정값
         rr+=1
 
-def accumulate(existing_path, new_invoices, new_deposits, issuer, out_path, exceptions=None):
-    """원본 정산은 그대로 보존(제자리), 신규 계산서 추가 + 신규 입금만 미정산 계산서에 채움."""
+def accumulate(existing_path, new_invoices, new_deposits, issuer, out_path, exceptions=None, eum_tol=0):
+    """원본 정산은 그대로 보존(제자리), 신규 계산서 추가 + 신규 입금만 미정산 계산서에 채움.
+    eum_tol>0: 이 거래처는 어음(단일)이 계산서와 eum_tol원 이내 소액차이(불량차감 등)면 매칭하고 차액 0 처리."""
     EL=get_column_letter
     flags=[]
     if existing_path and os.path.exists(existing_path):
@@ -640,6 +641,14 @@ def accumulate(existing_path, new_invoices, new_deposits, issuer, out_path, exce
             if found:
                 settlements.append({'inv':found,'dep':d}); matched.add(dj)
                 for i in found: unm.discard(i)
+    # 어음 근사매칭(불량차감): 지정 거래처 한정, 단일 계산서와 eum_tol원 이내면 매칭(소액차이는 불량차감 처리)
+    if eum_tol>NEAR:
+        for dj,d in enumerate(deps):
+            if dj in matched: continue
+            sub=_find(d['amt'],1,d['date'],eum_tol)
+            if sub:
+                settlements.append({'inv':sub,'dep':d,'defect':abs(uamt[sub[0]]-d['amt'])}); matched.add(dj)
+                for i in sub: unm.discard(i)
     leftover=[deps[dj] for dj in range(len(deps)) if dj not in matched]
     def put_dep(rr,d):
         ws.cell(rr,C['은행'],d.get('bank','')); ws.cell(rr,C['입금'],d['amt'])
@@ -664,6 +673,14 @@ def accumulate(existing_path, new_invoices, new_deposits, issuer, out_path, exce
                 ws.cell(rr,C['은행'],"합산정산"); ws.cell(rr,C['입금일'],d['date'])
                 ws.cell(rr,C['입금']).value=None; ws.cell(rr,C['정산']).value=None
                 ws.cell(rr,C['차액'],0); ws.cell(rr,C['비고'],f"{anchor}행")
+    # 어음 근사매칭으로 매칭된 소액차이 → 차액 0 + 비고(불량차감)
+    for st in settlements:
+        if st.get('defect',0)>NEAR:
+            rr=unsettled[st['inv'][0]]['row']; jc=ws.cell(rr,C['차액'])
+            if not isinstance(jc,MergedCell):
+                jc.value=0
+                if not str(ws.cell(rr,C['비고']).value or "").strip():
+                    ws.cell(rr,C['비고'], f"불량차감({int(st['defect']):,}원)")
     # 미배분 입금 → 바닥 loose 구간에 날짜순 끼워넣기(자기참조 행만 안전 재배치)
     _rebuild_loose_tail(ws, C, leftover, issuer_col, EL)
     for d in leftover: flags.append(f"미배분입금 {d['date']} {d['amt']:,}")
