@@ -363,6 +363,51 @@ def loose_credit(ws, C):
         if isinstance(dm,(int,float)) and dm>0: tot+=dm
     return tot
 
+def _net_unpaid_rows(ws, C, exc=None):
+    """계산서별 net 미수(과입금·미배분 크레딧 반영) → [(row, date, net>1000)] 오래된 순."""
+    HE=get_column_letter(C['합계']); IE=get_column_letter(C['입금']); per=[]
+    for r in range(3, ws.max_row+1):
+        jf=ws.cell(r,C['차액']).value
+        if not (isinstance(jf,str) and jf.startswith("=")): continue
+        a=pdate(ws.cell(r,C['작성']).value)
+        if not a: continue
+        sf=ws.cell(r,C['정산']).value; rows_h=[]
+        if isinstance(sf,str):
+            for m in re.finditer(r"SUM\("+HE+r"(\d+):"+HE+r"(\d+)\)", sf):
+                rows_h += list(range(int(m.group(1)),int(m.group(2))+1))
+            sf2=re.sub(r"SUM\("+HE+r"\d+:"+HE+r"\d+\)","",sf)
+            for m in re.finditer(HE+r"(\d+)", sf2): rows_h.append(int(m.group(1)))
+        if not rows_h: rows_h=[r]
+        F=sum(round((ws.cell(rh,C['공급']).value or 0)*1.1) for rh in rows_h if isinstance(ws.cell(rh,C['공급']).value,(int,float)))
+        rows_i=set(int(m.group(1)) for m in re.finditer(IE+r"(\d+)", jf))
+        for rh in rows_h:
+            if isinstance(ws.cell(rh,C['입금']).value,(int,float)): rows_i.add(rh)
+        I=sum((ws.cell(ri,C['입금']).value or 0) for ri in rows_i if isinstance(ws.cell(ri,C['입금']).value,(int,float)))
+        per.append((r, a, round(F-I)))
+    credit=sum(-u for _,_,u in per if u<0) + loose_credit(ws,C)
+    short=sorted([[r,a,u] for r,a,u in per if u>1000], key=lambda x:x[1])
+    for it in short:
+        use=min(it[2],credit); it[2]-=use; credit-=use
+    return [(r,a,u) for r,a,u in short if u>1000]
+
+def _fifo_place(ws, C, leftover, EL):
+    """미배분 입금을 가장 오래된 net 미수 계산서 행에 직접 얹는다(시각적 FIFO). 못 얹은 입금은 반환."""
+    rest=[]
+    for d in sorted(leftover, key=lambda x:x['date']):
+        tg=_net_unpaid_rows(ws, C)
+        placed=False
+        for r,_,_ in tg:
+            if ws.cell(r,C['입금']).value in (None,"") and ws.cell(r,C['은행']).value in (None,""):
+                ws.cell(r,C['은행'], d.get('bank',''))
+                ws.cell(r,C['입금일'], (f"{d['date'].isoformat()}\n({d['maturity']})" if d.get('maturity') else d['date']))
+                ws.cell(r,C['입금'], d['amt'])
+                jc=ws.cell(r,C['차액']).value
+                if not (isinstance(jc,str) and jc.startswith("=")):
+                    ws.cell(r,C['차액'], f"={EL(C['정산'])}{r}-{EL(C['입금'])}{r}")
+                placed=True; break
+        if not placed: rest.append(d)
+    return rest
+
 def unpaid_after_credit(ws, C, exc=None):
     """계산서별 미수 계산 후, 과입금(음수=초과수령)+미배분 floating 입금을 부족분(미수)에 오래된 순으로 상계.
     반환: 상계 후에도 1000원 초과로 남는 [(작성일, 미수액)]."""
@@ -487,6 +532,7 @@ def _rebuild_loose_tail(ws, C, leftover, issuer_col, EL):
             ws.cell(rr,C['차액'],f"={EL(C['정산'])}{rr}-{EL(C['입금'])}{rr}")
         else:
             ws.cell(rr,C['은행'],it[4]); ws.cell(rr,C['입금일'],it[5]); ws.cell(rr,C['입금'],it[6])
+            ws.cell(rr,C['차액'], -int(it[6]) if isinstance(it[6],(int,float)) else None)   # 미배분 입금 = 과입금(-입금), 고정값
         rr+=1
 
 def accumulate(existing_path, new_invoices, new_deposits, issuer, out_path, exceptions=None):
