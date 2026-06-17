@@ -348,11 +348,26 @@ def compute_unpaid(ws, C, exc=None):
         out.append((a, round(unpaid)))
     return out
 
+def loose_credit(ws, C):
+    """어느 계산서 차액수식에도 참조되지 않은 floating 입금 합(=미배분 입금). 케이테크처럼 금액이 안 맞아도 오래된 미수부터 차감하는 데 사용."""
+    IE=get_column_letter(C['입금']); referenced=set()
+    for r in range(3, ws.max_row+1):
+        jf=ws.cell(r,C['차액']).value
+        if isinstance(jf,str) and jf.startswith("="):
+            referenced.update(int(m.group(1)) for m in re.finditer(IE+r"(\d+)", jf))
+    tot=0
+    for r in range(3, ws.max_row+1):
+        if r in referenced: continue
+        if pdate(ws.cell(r,C['작성']).value): continue   # 계산서 행은 제외 — 작성일 없는 순수 floating 입금만
+        dm=ws.cell(r,C['입금']).value
+        if isinstance(dm,(int,float)) and dm>0: tot+=dm
+    return tot
+
 def unpaid_after_credit(ws, C, exc=None):
-    """계산서별 미수 계산 후, 과입금(음수=초과수령)을 부족분(미수)에 오래된 순으로 상계.
+    """계산서별 미수 계산 후, 과입금(음수=초과수령)+미배분 floating 입금을 부족분(미수)에 오래된 순으로 상계.
     반환: 상계 후에도 1000원 초과로 남는 [(작성일, 미수액)]."""
     ups=compute_unpaid(ws, C, exc)
-    credit=sum(-u for d,u in ups if u<0)          # 과입금 = 신용 잔액
+    credit=sum(-u for d,u in ups if u<0) + loose_credit(ws, C)   # 과입금 + 미배분 입금 = 신용 잔액
     short=sorted([[d,u] for d,u in ups if u>1000], key=lambda x:x[0])
     for it in short:
         use=min(it[1],credit); it[1]-=use; credit-=use
