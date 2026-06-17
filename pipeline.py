@@ -156,6 +156,12 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
         nm = re.sub(r"^[^)]*\)\s*", "", os.path.basename(f)).rsplit(" (", 1)[0]; nb_map[loc][E.cname(nm)] = bn
     for loc in uploads_by_loc:
         for x in sales[loc]: nb_map[loc].setdefault(E.cname(x["거래처"]), x["사업자번호"])
+    def _bn_of(loc, who):
+        if not who: return None
+        wc = E.cname(who); m = nb_map[loc].get(wc)
+        if m: return m
+        cand = set(v for k, v in nb_map[loc].items() if k and len(k) >= 2 and (k.startswith(wc) or wc.startswith(k)))
+        return next(iter(cand)) if len(cand) == 1 else None
     # 6) 입금(은행) + 어음 → 거래처 배정
     cust_dep = defaultdict(list); unassigned = []
     for loc in uploads_by_loc:
@@ -166,7 +172,7 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
                 if _ra: cust_dep[_ra].append(d); continue
                 kind, who = E.match_deposit(loc, d["상대방명"], universe, alias)
                 if kind == "제외": continue
-                bn = nb_map[loc].get(E.cname(who)) if who else None
+                bn = _bn_of(loc, who)
                 if not bn: unassigned.append((loc, d["거래일"], d["입금액"], d["상대방명"], kind or "미배정")); continue
                 cust_dep[(loc, bn)].append(d)
         for fp in detected[loc]["어음"]:
@@ -176,7 +182,7 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
                 _ra = reassign.get((e["수취일"], int(e["어음금액"])))
                 if _ra: cust_dep[_ra].append(_d); continue
                 kind, who = E.match_deposit(loc, e["발행인"], universe, alias)
-                bn = nb_map[loc].get(E.cname(who)) if who else None
+                bn = _bn_of(loc, who)
                 if not bn: unassigned.append((loc, e["수취일"], e["어음금액"], e["발행인"]+"(어음)", "어음-미배정")); continue
                 cust_dep[(loc, bn)].append({"거래일": e["수취일"], "입금액": e["어음금액"], "상대방명": e["발행인"], "은행": e.get("bank", ""), "만기": e["만기일"]})
     # 7) 거래처별 누적 출력
