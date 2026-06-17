@@ -312,6 +312,15 @@ def resolve_rule(rule, sup):
     if m: return m.group(2) if (sup or 0) > int(m.group(1)) else m.group(3)
     return rule
 
+NORECV=re.compile(r'수취\s*불가|부도|못받|미수령|미회수')
+def _recv(ws,C,r):
+    """입금액. 비고에 '수취 불가/부도' 등 미수령 표시가 있으면 0(어음 부도 등 미회수)."""
+    v=ws.cell(r,C['입금']).value
+    if not isinstance(v,(int,float)): return 0
+    bg=ws.cell(r,C['비고']).value
+    if bg and NORECV.search(str(bg)): return 0
+    return v
+
 def compute_unpaid(ws, C, exc=None):
     """계산서별 미수액 = 정산액(F) - 입금합(I). 정산/차액 수식을 파싱해 그룹 단위로 계산.
     반환: [(작성일, 미수액)]. 예외(작성일,합계) 행은 제외. 단일 워크북(수식)만 필요."""
@@ -337,7 +346,7 @@ def compute_unpaid(ws, C, exc=None):
         # 차액수식에 입금참조가 누락된 경우(원본 오류) 보강: 정산 그룹 행의 입금도 포함
         for rh in rows_h:
             if isinstance(ws.cell(rh,C['입금']).value,(int,float)): rows_i.add(rh)
-        I=sum((ws.cell(ri,C['입금']).value or 0) for ri in rows_i if isinstance(ws.cell(ri,C['입금']).value,(int,float)))
+        I=sum(_recv(ws,C,ri) for ri in rows_i)
         unpaid=F-I
         mdig=re.search(r"ROUNDDOWN\([^,]*,\s*(-?\d+)\)", jf)  # 행별 절사 자릿수 반영(-3,-4,-5)
         if mdig:
@@ -353,14 +362,14 @@ def loose_credit(ws, C):
     IE=get_column_letter(C['입금']); referenced=set()
     for r in range(3, ws.max_row+1):
         jf=ws.cell(r,C['차액']).value
-        if isinstance(jf,str) and jf.startswith("="):
+        if isinstance(jf,str) and jf.startswith("=") and pdate(ws.cell(r,C['작성']).value):
             referenced.update(int(m.group(1)) for m in re.finditer(IE+r"(\d+)", jf))
     tot=0
     for r in range(3, ws.max_row+1):
         if r in referenced: continue
         if pdate(ws.cell(r,C['작성']).value): continue   # 계산서 행은 제외 — 작성일 없는 순수 floating 입금만
-        dm=ws.cell(r,C['입금']).value
-        if isinstance(dm,(int,float)) and dm>0: tot+=dm
+        dm=_recv(ws,C,r)
+        if dm>0: tot+=dm
     return tot
 
 def _net_unpaid_rows(ws, C, exc=None):
@@ -382,7 +391,7 @@ def _net_unpaid_rows(ws, C, exc=None):
         rows_i=set(int(m.group(1)) for m in re.finditer(IE+r"(\d+)", jf))
         for rh in rows_h:
             if isinstance(ws.cell(rh,C['입금']).value,(int,float)): rows_i.add(rh)
-        I=sum((ws.cell(ri,C['입금']).value or 0) for ri in rows_i if isinstance(ws.cell(ri,C['입금']).value,(int,float)))
+        I=sum(_recv(ws,C,ri) for ri in rows_i)
         per.append((r, a, round(F-I)))
     credit=sum(-u for _,_,u in per if u<0) + loose_credit(ws,C)
     short=sorted([[r,a,u] for r,a,u in per if u>1000], key=lambda x:x[1])
