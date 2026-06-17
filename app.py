@@ -217,7 +217,7 @@ if ADMIN:
             ok, probs = pipeline.verify(out_dir, DATA)
             if ok:
                 store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
-                open(BASIS, "w", encoding="utf-8").write(datetime.date.today().isoformat())
+                open(BASIS, "w", encoding="utf-8").write(res.get("basis") or datetime.date.today().isoformat())
                 saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "update baseline via app")
                 note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
                 zb = zip_bytes(DATA)

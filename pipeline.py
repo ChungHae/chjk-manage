@@ -65,6 +65,30 @@ def detect_type(path):
         return "은행"
     return None
 
+def _col_max_date(path, keys, today=None):
+    """헤더에서 keys(거래일/작성일 등) 컬럼을 찾아, 그 컬럼 데이터의 가장 늦은 날짜(오늘 이후 제외)."""
+    import datetime as _dt
+    today = today or _dt.date.today()
+    try: raw = pd.read_excel(path, header=None, dtype=object, nrows=100000)
+    except Exception: return None
+    col = None; hr = None
+    for i in range(min(20, len(raw))):
+        for j, v in enumerate(raw.iloc[i].tolist()):
+            sv = str(v).replace(" ", "")
+            if any(k in sv for k in keys): hr = i; col = j; break
+        if col is not None: break
+    if col is None: return None
+    best = None
+    for i in range(hr + 1, len(raw)):
+        m = re.search(r"(20\d{2})[.\-/](\d{1,2})[.\-/](\d{1,2})", str(raw.iloc[i, col]))
+        if not m: continue
+        try: d = _dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError: continue
+        if d > today: continue
+        s = d.isoformat()
+        if best is None or s > best: best = s
+    return best
+
 # ---------- 누적 처리 ----------
 def process(uploads_by_loc, data_dir, out_dir, progress=None):
     """uploads_by_loc: {'서울':[paths...], '화성':[paths...]} (지역별 업로드 파일 경로).
@@ -213,8 +237,23 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
     for tbl in glob.glob(os.path.join(data_dir, "_*.xlsx")): shutil.copy(tbl, os.path.join(out_dir, os.path.basename(tbl)))
     status = Counter(s[3] for s in summary)
     new_companies = [s[1] for s in summary if s[8] == "신규"]
+    # 기준일 = 업로드 자료의 최근 거래일/작성일(은행·세금계산서 스캔 + 어음 수취일; 미래 만기 제외)
+    _bc = []
+    for loc in uploads_by_loc:
+        for fp in detected[loc]["은행"]:
+            d = _col_max_date(fp, ["거래일시", "거래일", "거래일자"])
+            if d: _bc.append(d)
+        for fp in detected[loc]["매출"] + detected[loc]["매입"]:
+            d = _col_max_date(fp, ["작성일자", "작성일"])
+            if d: _bc.append(d)
+        for fp in detected[loc]["어음"]:
+            try:
+                for e in E.parse_eum(fp):
+                    if e.get("수취일"): _bc.append(e["수취일"])
+            except Exception: pass
+    basis = max(_bc) if _bc else None
     return dict(summary=summary, detected=detected, status=dict(status), unassigned=unassigned,
-                flags=flags, out_dir=out_dir, new_companies=new_companies)
+                flags=flags, out_dir=out_dir, new_companies=new_companies, basis=basis)
 
 
 # ---------- 갱신본 검증 (손상 + 입금누락) ----------
