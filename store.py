@@ -74,3 +74,14 @@ def replace_customer_files(work_dir, items, data_zip, backup_zip):
         n += 1
     _zip_dir(work_dir, data_zip)
     return n
+
+def clone_data_repo(data_repo, token, dest):
+    """비공개 자료 저장소(chjk-data)를 토큰으로 clone. 성공 시 경로 반환, 미설정/실패 시 None."""
+    if not (data_repo and token): return None
+    url = f"https://x-access-token:{token}@github.com/{data_repo}.git"
+    try:
+        shutil.rmtree(dest, ignore_errors=True)
+        subprocess.run(["git", "clone", "--depth", "1", url, dest], check=True, capture_output=True, timeout=120)
+        return dest
+    except Exception:
+        return None

@@ -8,14 +8,21 @@ import pipeline, store
 st.set_page_config(page_title="충해전기 관리시스템", page_icon="📒", layout="wide")
 st.markdown("<style>.block-container{max-width:1180px;margin:0 auto;padding-top:2.2rem;padding-left:3rem;padding-right:3rem;}</style>", unsafe_allow_html=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA_ZIP = os.path.join(HERE, "data.zip")
-BACKUP_ZIP = os.path.join(HERE, "_직전본.zip")
-BASIS = os.path.join(HERE, "_기준일.txt")
-DATA = store.ensure_data(DATA_ZIP, os.path.join(tempfile.gettempdir(), "misu_work"))
 LOGO = "https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg"
 NAVY = "#1B3A6B"
 GIT_TOKEN = st.secrets.get("github_token", os.environ.get("GITHUB_TOKEN", ""))
-GIT_REPO = st.secrets.get("github_repo", os.environ.get("GITHUB_REPO", ""))
+DATA_REPO = st.secrets.get("github_data_repo", st.secrets.get("github_repo", os.environ.get("GITHUB_REPO", "")))
+
+@st.cache_resource(show_spinner=False)
+def _data_repo_dir():
+    return store.clone_data_repo(DATA_REPO, GIT_TOKEN, os.path.join(tempfile.gettempdir(), "chjk_data_repo"))
+
+_REPO_DIR = _data_repo_dir() or HERE   # 자료 저장소(비공개). 실패 시 코드폴더(번들 data.zip) 대체
+DATA_OK = bool(_data_repo_dir()) or os.path.exists(os.path.join(HERE, "data.zip"))
+DATA_ZIP = os.path.join(_REPO_DIR, "data.zip")
+BACKUP_ZIP = os.path.join(_REPO_DIR, "_직전본.zip")
+BASIS = os.path.join(_REPO_DIR, "_기준일.txt")
+DATA = store.ensure_data(DATA_ZIP, os.path.join(tempfile.gettempdir(), "misu_work"))
 
 def basis_date():
     try: return datetime.date.fromisoformat(open(BASIS, encoding="utf-8").read().strip())
@@ -127,6 +134,8 @@ header()
 if ADMIN:
     st.markdown(f"<div style='margin:-6px 0 8px;'><span style='background:{NAVY};color:#fff;font-size:12px;font-weight:600;padding:3px 12px;border-radius:6px;'>🔑 관리자 계정</span></div>", unsafe_allow_html=True)
     st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
+if DATA_REPO and GIT_TOKEN and not _data_repo_dir():
+    st.error("⚠ 자료 저장소(chjk-data) 연결 실패 — Secrets의 github_token 권한(chjk-data Contents: Read and write)과 github_data_repo 값을 확인하세요.")
 
 def _cust_label(loc, n):
     m = re.search(r"\((\d{3}-\d{2}-\d{5})\)", n)
@@ -159,7 +168,7 @@ with st.expander("🛟 비상 복구 (직전본)", expanded=False):
         bc1.download_button("직전본 다운로드 (서울·화성)", zip_backup_customers(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
         if ADMIN and bc2.button("⏪ 직전본으로 복구"):
             if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
-                if GIT_TOKEN: store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "restore previous baseline")
+                if GIT_TOKEN: store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "restore previous baseline")
                 st.session_state.pop("result", None)
                 st.success("직전본으로 복구했습니다."); st.rerun()
     else:
@@ -186,7 +195,7 @@ if ADMIN:
             good = [(loc, nm, b) for loc, nm, biz, ok, b in parsed if ok and biz]
             if good and st.button(f"{len(good)}개 거래처 교체 (직전본 백업 후)", type="primary", key="manual_apply"):
                 store.replace_customer_files(DATA, good, DATA_ZIP, BACKUP_ZIP)
-                saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "manual edit replace")
+                saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "manual edit replace")
                 st.session_state.pop("result", None)
                 st.session_state["manual_done"] = f"✅ {len(good)}개 거래처 교체 완료." + ("  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})")
                 st.toast(f"{len(good)}개 거래처 교체 완료 ✅")
@@ -221,7 +230,7 @@ if ADMIN:
             if ok:
                 store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
                 open(BASIS, "w", encoding="utf-8").write(res.get("basis") or datetime.date.today().isoformat())
-                saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "update baseline via app")
+                saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "update baseline via app")
                 note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
                 zb = zip_bytes(DATA)
             else:
