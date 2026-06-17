@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, io, zipfile, tempfile, glob, datetime
+import os, io, zipfile, tempfile, glob, datetime, re
 import streamlit as st
 import pandas as pd
 import pipeline, store
@@ -127,18 +127,25 @@ if ADMIN:
     st.markdown(f"<div style='margin:-6px 0 8px;'><span style='background:{NAVY};color:#fff;font-size:12px;font-weight:600;padding:3px 12px;border-radius:6px;'>🔑 관리자 계정</span></div>", unsafe_allow_html=True)
     st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
 
+def _cust_label(loc, n):
+    m = re.search(r"\((\d{3}-\d{2}-\d{5})\)", n)
+    biz = m.group(1) if m else ""
+    nm = re.sub(r"^[^)]*\)\s*", "", n).rsplit(" (", 1)[0]
+    return f"[{loc}] {nm}" + (f" ({biz})" if biz else "")
+
 with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False):
     files = all_company_files()
-    _opts = [f"[{loc}] {n}" for loc, f, n in files]
-    sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · ✕로 지우고 다시 검색",
+    _label_map = {}
+    for loc, f, n in files:
+        _label_map[_cust_label(loc, n)] = (f, n)
+    _opts = list(_label_map.keys())
+    sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · 클릭 후 바로 입력하면 새로 검색됩니다",
                        _opts, index=None, placeholder="거래처명 입력 (예: 농협)", key="cust_sel")
-    if sel:
-        for loc, f, n in files:
-            if f"[{loc}] {n}" == sel:
-                with open(f, "rb") as fh:
-                    st.download_button(f"📥 {n} 다운로드", fh.read(), file_name=n, key="dl_sel",
-                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                break
+    if sel and sel in _label_map:
+        f, n = _label_map[sel]
+        with open(f, "rb") as fh:
+            st.download_button(f"📥 {sel} 다운로드", fh.read(), file_name=n, key="dl_sel",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 with st.expander("📥 현재 누적자료 전체 다운로드 (zip)", expanded=False):
     if os.path.isdir(DATA):
