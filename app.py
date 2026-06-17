@@ -166,7 +166,9 @@ with st.expander("🛟 비상 복구 (직전본)", expanded=False):
         st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
 
 if ADMIN:
-    with st.expander("✏️ 거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=False):
+    _md = st.session_state.pop("manual_done", None)
+    with st.expander("✏️ 거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=bool(_md)):
+        if _md: st.success(_md)
         st.caption("거래처 파일을 받아 직접 고친 뒤 여기 올리면 그 거래처를 교체합니다. 사업자번호로 자동 인식하며, 교체 전 직전본이 백업됩니다.")
         m_ups = st.file_uploader("수정한 거래처 파일(.xlsx) 업로드", accept_multiple_files=True, type=["xlsx"], key="manual_edit")
         if m_ups:
@@ -186,7 +188,8 @@ if ADMIN:
                 store.replace_customer_files(DATA, good, DATA_ZIP, BACKUP_ZIP)
                 saved, msg = store.git_commit_push(HERE, GIT_TOKEN, GIT_REPO, "manual edit replace")
                 st.session_state.pop("result", None)
-                st.success(f"{len(good)}개 거래처 교체 완료." + ("  (GitHub 영구저장)" if saved else f"  (미저장: {msg})"))
+                st.session_state["manual_done"] = f"✅ {len(good)}개 거래처 교체 완료." + ("  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})")
+                st.toast(f"{len(good)}개 거래처 교체 완료 ✅")
                 st.rerun()
 
     st.subheader("자료 업로드")
