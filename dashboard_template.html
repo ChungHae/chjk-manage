@@ -1,0 +1,153 @@
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name=viewport content='width=device-width,initial-scale=1'><title>미수 현황</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap");
+*{box-sizing:border-box}html{overflow-y:scroll}body{margin:0;font-family:"Source Sans","Source Sans 3",sans-serif;background:#fff;color:#1A1A1A}
+.wrap{max-width:1180px;margin:0 auto;padding:2.2rem 3rem 60px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:2px solid #1B3A6B;padding:0 0 12px;margin-bottom:20px}.hgroup{display:flex;align-items:center;gap:18px}.logo{height:52px;width:auto;object-fit:contain}.htitle{font-size:22px;font-weight:600;color:#1B3A6B;line-height:1.25}.hsub{font-size:12px;letter-spacing:2px;color:#888;margin-top:2px}.syslink{background:#1B3A6B;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;white-space:nowrap}.syslink:hover{opacity:.9}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#6b7a90;margin-bottom:12px;padding:10px 14px;background:#F7F9FC;border-radius:10px}.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}.legend b{color:#445;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.kpi{background:#fff;border:1px solid #e7ecf3;border-radius:14px;padding:16px 18px;transition:.12s}
+.kpi.hi{background:#1B3A6B;color:#fff;border-color:#1B3A6B}
+.kpi.click{cursor:pointer}.kpi.click:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(27,58,107,.15)}
+.kpi.active{outline:3px solid #1B3A6B;outline-offset:1px}
+.kpi .k{font-size:13px;color:#6b7a90}.kpi.hi .k{color:#b9cdec}
+.kpi .v{font-size:28px;font-weight:800;margin-top:6px;letter-spacing:-1px}.kpi .v small{font-size:14px;font-weight:600;margin-left:2px}
+.kpi .x{font-size:12px;color:#9aa7b8;margin-top:3px}.kpi.hi .x{color:#9fb6db}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.chcard{background:#fff;border:1px solid #e7ecf3;border-radius:14px;padding:14px 16px 16px;cursor:pointer;transition:.12s}.chcard:hover{box-shadow:0 4px 12px rgba(27,58,107,.12);border-color:#c9d6ea}
+.chcard h3{font-size:14px;margin:0 0 12px;color:#1B3A6B}.chcard h3 span{font-size:12px;color:#9aa7b8;font-weight:500}
+.cbhead{display:flex;justify-content:space-between;font-size:11px;color:#9aa7b8;margin:2px 0 8px;padding-bottom:5px;border-bottom:1px dashed #e7ecf3}.cbrow{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12.5px}
+.cbname{width:100px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334}
+.cbbar{flex:1;background:#EAF1FB;border-radius:5px;height:16px;overflow:hidden}
+.cbfill{height:100%;border-radius:5px}
+.cbval{width:84px;flex:none;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-weight:600}.cbdate{font-size:10px;color:#9aa7b8;font-weight:400;margin-top:1px}
+.cbempty{color:#9aa7b8;font-size:13px;padding:14px 0}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;padding:11px 14px 11px 38px;border:1px solid #d6deea;border-radius:10px;font-size:14px;outline:none}
+.search input:focus{border-color:#1B3A6B}
+.search:before{content:'🔎';position:absolute;left:12px;top:10px;font-size:14px;opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.regtoggle{display:flex;border:1px solid #d6deea;border-radius:10px;overflow:hidden;flex:none}.regtoggle button{border:none;background:#fff;padding:9px 16px;font-size:13px;cursor:pointer;color:#445;border-left:1px solid #eef1f6}.regtoggle button:first-child{border-left:none}.regtoggle button.on{background:#1B3A6B;color:#fff}
+.chip{padding:8px 13px;border-radius:20px;border:1px solid #d6deea;background:#fff;font-size:13px;cursor:pointer;color:#445}
+.chip.on{background:#1B3A6B;color:#fff;border-color:#1B3A6B}.cc{font-weight:700}
+.card{background:#fff;border:1px solid #e7ecf3;border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:11px 12px;border-bottom:1px solid #eef1f6;text-align:left}
+th{font-size:12px;color:#6b7a90;font-weight:600;background:#fafbfd}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.c,th.c{text-align:center}
+tr.main{cursor:pointer} tr.main:hover{background:#f7f9fc}
+.tag{color:#fff;font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.t장기미수{background:#C0392B}.t미수{background:#E0892B}.t진행{background:#3A6BB0}.t완납{background:#2E7D5B}
+.reg{font-size:11px;padding:1px 6px;border-radius:5px} .rs{background:#E3ECF9;color:#2A55A0} .rh{background:#FBEDE3;color:#B5631F}
+.expand{font-size:11px;color:#9aa7b8}
+.detail td{background:#fbfcfe;padding:0}
+.dbox{padding:14px 18px}
+.effort{font-size:13px;padding:8px 12px;border-radius:8px;margin-bottom:12px}
+.eff-good{background:#EAF6EF;color:#216B45}.eff-warn{background:#FFF7EC;color:#9A6A14}.eff-bad{background:#FBECEC;color:#9C2B22}
+.deps{width:100%;font-size:12.5px}.deps th{background:none;color:#9aa7b8}.deps td{padding:6px 10px;border-bottom:1px solid #f0f3f8}
+.empty{padding:40px;text-align:center;color:#9aa7b8;font-size:14px}
+.note{font-size:12px;color:#9aa7b8;margin-top:18px}
+@media(max-width:760px){.wrap{padding:1.4rem 1.1rem 50px}.kpis{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
+.modal{position:fixed;inset:0;background:rgba(20,30,50,.45);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:48px 16px;overflow:auto}.modal.open{display:flex}.modalbox{background:#fff;border-radius:16px;max-width:560px;width:100%;padding:24px 26px 26px;box-shadow:0 16px 48px rgba(0,0,0,.28);position:relative}.mclose{position:absolute;top:10px;right:14px;font-size:24px;line-height:1;color:#9aa7b8;cursor:pointer;border:none;background:none}.mclose:hover{color:#555}.mhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:1px solid #eef1f6;padding-bottom:14px;margin-bottom:14px}.mname{font-size:20px;font-weight:700;color:#1B3A6B}.msub{font-size:12.5px;color:#6b7a90;margin-top:4px}.mamt{font-size:14px;color:#445}.mamt b{font-size:24px;color:#1B3A6B;margin-left:6px}.mdh{font-size:12px;color:#9aa7b8;margin:16px 0 6px}</style></head><body><div class=wrap>
+<div class=top><div class=hgroup><img class=logo src="https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg" onerror="this.style.display='none'"><div><div class=htitle>미수 현황</div><div class=hsub>현재 자료: @@BASIS@@ 기준</div></div></div></div>
+
+<div class=legend>
+ <span><i style="background:#2E7D5B"></i>완납 <b>입금 완료</b></span>
+ <span><i style="background:#3A6BB0"></i>진행 <b>결제기한 내(미수 아님)</b></span>
+ <span><i style="background:#E0892B"></i>미수 <b>결제기한 경과</b></span>
+ <span><i style="background:#C0392B"></i>장기미수 <b>결제기한 1개월 이상 경과</b></span>
+</div>
+<div class=kpis>
+ <div class='kpi hi'><div class=k id=kLab1>전체 총 미수액</div><div class=v id=kAmt>8.2억<small>원</small></div><div class=x id=kAmtSub>818,564,943원 · 미수+장기미수 기준</div></div>
+ <div class='kpi click' data-f=unpaid id=kall><div class=k id=kLab2>전체 미수 거래처</div><div class=v><span id=kUnp>33</span><small>곳</small></div></div>
+ <div class='kpi click' data-f=장기미수 id=klong><div class=k id=kLab3>전체 장기미수</div><div class=v><span id=kLong>25</span><small>곳</small></div></div>
+</div>
+
+@@CHARTS@@
+<div class=toolbar>
+ <div class=search><input id=q placeholder='거래처명 검색' oninput='render()'></div>
+ <div class=regtoggle>
+  <button class=on data-r=all onclick='setR(this)'>전체</button>
+  <button data-r=서울 onclick='setR(this)'>서울</button>
+  <button data-r=화성 onclick='setR(this)'>화성</button>
+ </div>
+</div>
+<div class=chips>
+  <div class=chip data-f=all onclick='setF(this)'>전체 <b class=cc>302</b></div>
+  <div class='chip on' data-f=unpaid onclick='setF(this)'>미수 전체 <b class=cc>33</b></div>
+  <div class=chip data-f=미수 onclick='setF(this)'>미수 <b class=cc>8</b></div>
+  <div class=chip data-f=장기미수 onclick='setF(this)'>장기미수 <b class=cc>25</b></div>
+  <div class=chip data-f=진행 onclick='setF(this)'>진행 <b class=cc>54</b></div>
+  <div class=chip data-f=완납 onclick='setF(this)'>완납 <b class=cc>215</b></div>
+</div>
+
+<div class=card><table>
+<thead><tr><th>거래처</th><th class=c>지역</th><th class=num>미수액(원)</th><th class=c>상태</th><th class=c>결제조건</th><th class=c>최근입금</th></tr></thead>
+<tbody id=tb></tbody></table></div>
+<div class=note>거래처 행을 클릭하면 입금 이력(갚으려는 노력)이 펼쳐집니다. 미수액은 총 미받은 잔액(청구−입금)이며, 실제 거래처 파일을 기준일(2026-06-16, 자료 최근거래일) 기준으로 다시 계산한 값입니다.</div>
+</div>
+
+<script>
+const DATA=@@DATA@@;
+let FILTER='unpaid';let REGION='all';
+function won(x){return (x||0).toLocaleString('ko-KR')}
+function eok(x){return (x/1e8).toFixed(1)+'억'}
+function regCount(){const f={all:0,unpaid:0,미수:0,장기미수:0,진행:0,완납:0};let amt=0;
+ DATA.forEach(o=>{if(REGION!=='all'&&o.reg!==REGION)return;f.all++;
+  if(o.status==='미수'||o.status==='장기미수'){f.unpaid++;amt+=o.amt;}
+  if(f[o.status]!==undefined)f[o.status]++;});return {f:f,amt:amt};}
+function updateCounts(){const r=regCount();
+ document.querySelectorAll('.chip').forEach(c=>{const b=c.querySelector('.cc');if(b)b.textContent=r.f[c.dataset.f];});
+ document.getElementById('kAmt').innerHTML=eok(r.amt)+'<small>원</small>';
+ document.getElementById('kAmtSub').textContent=won(r.amt)+'원 · 미수+장기미수 기준';
+ document.getElementById('kUnp').textContent=r.f.unpaid;
+ document.getElementById('kLong').textContent=r.f['장기미수'];
+ const rn=REGION==='all'?'전체':REGION;
+ document.getElementById('kLab1').textContent=rn+' 총 미수액';
+ document.getElementById('kLab2').textContent=rn+' 미수 거래처';
+ document.getElementById('kLab3').textContent=rn+' 장기미수';}
+function isUnpaid(o){return o.status==='미수'||o.status==='장기미수'}
+function setF(el){FILTER=el.dataset.f;chipSync();render()}
+function setRegion(reg){REGION=reg;document.querySelectorAll('.regtoggle button').forEach(b=>b.classList.toggle('on',b.dataset.r===reg));updateCounts();render()}
+function setR(el){setRegion(el.dataset.r)}
+function chipSync(){document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.f===FILTER));
+ document.getElementById('kall').classList.toggle('active',FILTER==='unpaid');
+ document.getElementById('klong').classList.toggle('active',FILTER==='장기미수')}
+document.getElementById('kall').onclick=()=>{FILTER='unpaid';chipSync();render()};
+document.getElementById('klong').onclick=()=>{FILTER='장기미수';chipSync();render()};
+function effort(o){
+ if(!isUnpaid(o)) return ['eff-good', o.status==='완납'?'완납 — 미수 없음':'진행 — 기한 내 (미수 아님)'];
+ if(!o.last_dep) return ['eff-bad','입금 이력이 없습니다 — 회수 노력 필요'];
+ const s=o.since;
+ if(s<=45) return ['eff-good','최근 입금 '+o.last_dep+' — 상환 진행 중'];
+ if(s<=120) return ['eff-warn','마지막 입금 '+o.last_dep+' — 경과 주시'];
+ return ['eff-bad','마지막 입금 '+o.last_dep+' — 장기간 입금 없음'];
+}
+function render(){
+ const q=document.getElementById('q').value.trim();
+ let rows=DATA.filter(o=>{const s=(FILTER==='all')?true:((FILTER==='unpaid')?isUnpaid(o):(o.status===FILTER));return s&&(REGION==='all'||o.reg===REGION)});
+ if(q) rows=rows.filter(o=>o.name.includes(q));
+ rows.sort((a,b)=>b.amt-a.amt||a.name.localeCompare(b.name,'ko'));
+ const tb=document.getElementById('tb');
+ if(!rows.length){tb.innerHTML='<tr><td colspan=6 class=empty>해당하는 거래처가 없습니다.</td></tr>';return}
+ tb.innerHTML=rows.map((o,i)=>{
+  const reg='<span class="reg '+(o.reg==='서울'?'rs':'rh')+'">'+o.reg+'</span>';
+  const lastd=o.last_dep||'<span style=color:#C0392B>없음</span>';
+  const main='<tr class=main onclick="openModal(&#39;'+o.biz+'&#39;)"><td>'+o.name+' <span class=expand>›</span></td><td class=c>'+reg+'</td><td class=num>'+(o.amt>0?won(o.amt):'-')+'</td><td class=c><span class="tag t'+o.status+'">'+o.status+'</span></td><td class=c><span style="font-size:11px;color:#5a6a82">'+o.ruledisp+'</span></td><td class=c>'+lastd+'</td></tr>';
+  const [ec,et]=effort(o);
+  let dep=o.deps.length?('<table class=deps><thead><tr><th>입금일</th><th class=num>입금액(원)</th></tr></thead><tbody>'+o.deps.slice(-5).reverse().map(x=>'<tr><td>'+x.d+'</td><td class=num>'+won(x.a)+'</td></tr>').join('')+'</tbody></table>'):'<div style="color:#9aa7b8;font-size:13px">기록된 입금 내역이 없습니다.</div>';
+  const det='<tr class=detail id=d'+i+' style=display:none><td colspan=6><div class=dbox>'+
+    '<div class="effort '+ec+'">💬 '+et+'</div>'+
+    '<div style="font-size:12px;color:#9aa7b8;margin-bottom:6px">최근 입금 이력</div>'+dep+'</div></td></tr>';
+  return main;
+ }).join('');
+}
+function openModal(biz){const o=DATA.find(x=>x.biz===biz);if(!o)return;const ef=effort(o);const reg='<span class="reg '+(o.reg==='서울'?'rs':'rh')+'">'+o.reg+'</span>';const dep=o.deps.length?('<table class=deps><thead><tr><th>입금일</th><th class=num>입금액(원)</th></tr></thead><tbody>'+o.deps.slice().reverse().map(x=>'<tr><td>'+x.d+'</td><td class=num>'+won(x.a)+'</td></tr>').join('')+'</tbody></table>'):'<div style="color:#9aa7b8;font-size:13px">기록된 입금 내역이 없습니다.</div>';document.getElementById('modalBody').innerHTML='<button class=mclose onclick="closeModal()">×</button><div class=mhead><div><div class=mname>'+o.name+'</div><div class=msub>'+reg+' · 결제조건 '+o.ruledisp+'</div></div><span class="tag t'+o.status+'" style="font-size:13px;padding:4px 12px">'+o.status+'</span></div><div class=mamt>미수액 <b>'+(o.amt>0?won(o.amt)+'원':'-')+'</b></div><div class="effort '+ef[0]+'" style="margin:14px 0">💬 '+ef[1]+'</div><div class=mdh>입금 이력</div>'+dep;document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+chipSync();updateCounts();render();
+</script>
+<div id=modal class=modal onclick="if(event.target===this)closeModal()"><div class=modalbox id=modalBody></div></div>
+</body></html>
