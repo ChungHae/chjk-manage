@@ -5,8 +5,7 @@
 *{box-sizing:border-box}html{overflow-y:auto}body{margin:0;font-family:"Source Sans","Source Sans 3",sans-serif;background:#fff;color:#1A1A1A;position:relative}
 .wrap{max-width:100%;margin:0;padding:6px 0 44px}
 .top{display:flex;align-items:center;gap:18px;border-bottom:2px solid #1B3A6B;padding:0 0 12px;margin-bottom:18px}
-.logo{height:52px;width:auto;object-fit:contain}.htitle{font-size:22px;font-weight:600;color:#1B3A6B;line-height:1.25}.hsub{font-size:13px;letter-spacing:.3px;color:#6b7a90;margin-top:3px}
-.abadge{margin-left:auto;align-self:center;background:#1B3A6B;color:#fff;font-size:12px;font-weight:600;padding:5px 13px;border-radius:7px}
+.logo{height:52px;width:auto;object-fit:contain}.htitle{font-size:22px;font-weight:600;color:#1B3A6B;line-height:1.25}.hsub{font-size:12px;letter-spacing:2px;color:#888;margin-top:2px}
 .sel{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
 .years{display:flex;gap:6px;flex:1 1 auto;min-width:0;align-items:center}
 .regtoggle{display:flex;gap:6px;flex-wrap:wrap}
@@ -61,7 +60,8 @@ tr.sum td{font-weight:700;color:#1B3A6B;border-top:2px solid #dfe6f0;background:
 .msub{font-size:12.5px;color:#6b7a90;margin-bottom:12px}
 .mclose{position:absolute;top:13px;right:16px;border:none;background:none;font-size:22px;line-height:1;color:#9aa7b8;cursor:pointer}
 </style></head><body><div class=wrap>
-<div class=top><img class=logo src="https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg" onerror="this.style.display='none'"><div><div class=htitle>매출 현황</div><div class=hsub id=hsub>현재 자료: @@SBASIS@@ 기준</div></div>@@ADMINBADGE@@</div>
+<div class=top><img class=logo src="https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg" onerror="this.style.display='none'"><div><div class=htitle>매출 현황</div><div class=hsub id=hsub>현재 자료: @@SBASIS@@ 기준</div></div></div>
+@@ADMINBADGE@@
 
 <div class=sel>
  <div class=years id=years></div>
@@ -184,7 +184,7 @@ function openCompany(name){
     `<div class="row vh" style="margin:0 0 4px"><div class=lab></div><div class=bars></div><div class=val><b style="color:#1B3A6B">매출</b> / ${reg} 순위</div></div>`+rows;
   const _c=visTop()+(window.top.innerHeight||window.innerHeight)/2;document.getElementById("mbox").style.top=_c+"px";document.getElementById("mback").classList.add("open");fitVP();
 }
-function closeModal(){document.getElementById("mback").classList.remove("open");}
+function closeModal(){document.getElementById("mback").classList.remove("open");fitVP();}
 function renderAll(){renderKPI();renderRegSplit();renderTrend();renderMonth();renderRank();fitVP();}
 function buildYears(){
   const yrs=Object.keys(D.years).sort();
@@ -205,19 +205,18 @@ function reflowYears(){
   yrs.forEach(y=>{if(btns[y])years.appendChild(btns[y]);});   // 모두 본행으로(오름차순)
   ydrop.innerHTML=""; ymore.style.display="none";
   let i=0;
-  while(years.scrollWidth>years.clientWidth+1 && i<yrs.length-1){ ymore.style.display=""; ydrop.appendChild(btns[yrs[i]]); i++; }
+  if(years.clientWidth>60){ while(years.scrollWidth>years.clientWidth+1 && i<yrs.length-1){ ymore.style.display=""; ydrop.appendChild(btns[yrs[i]]); i++; } }
   setYearActive();
 }
-document.getElementById("years").addEventListener("click",function(e){
-  const b=e.target.closest("button"); if(!b)return;
+function bindYears(){document.querySelectorAll("#years button").forEach(function(b){b.onclick=function(){
   if(b.dataset.more){document.getElementById("ydrop").classList.toggle("open");return;}
-  if(!b.dataset.y)return;
   Y=b.dataset.y; document.getElementById("ydrop").classList.remove("open"); setYearActive(); renderAll();
-});
+};});}
 document.addEventListener("click",function(e){ if(!e.target.closest("#ymore")){const d=document.getElementById("ydrop"); if(d)d.classList.remove("open");}});
 function setRegion(r){R=r;document.querySelectorAll("#reg button,#reg2 button").forEach(x=>x.classList.toggle("on",x.dataset.r===r));renderAll();}
 document.querySelectorAll("#reg button,#reg2 button").forEach(b=>b.onclick=()=>setRegion(b.dataset.r));
 buildYears();
+bindYears();
 Y=(Object.keys(D.years).sort().slice(-1)[0])||"전체";
 reflowYears();
 renderAll();

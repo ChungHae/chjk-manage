@@ -150,7 +150,8 @@ def render(data_dir, admin=False, template_path=None):
         return None
     tp = template_path or os.path.join(os.path.dirname(os.path.abspath(__file__)), "sales_template.html")
     tpl = open(tp, encoding="utf-8").read()
-    badge = ("<div class=abadge>🔑 관리자 계정</div>") if admin else ""
+    badge = ("<div style='margin:-10px 0 8px'><span style='background:#1B3A6B;color:#fff;font-size:12px;"
+             "font-weight:600;padding:3px 12px;border-radius:6px'>🔑 관리자 계정</span></div>") if admin else ""
     return (tpl.replace("@@DATA@@", json.dumps(data, ensure_ascii=False))
                .replace("@@SBASIS@@", _basis_label(data))
                .replace("@@ADMINBADGE@@", badge))
