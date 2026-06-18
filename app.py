@@ -152,9 +152,9 @@ def render_result(R):
 
 # ===== 미수 현황 대시보드 페이지 =====
 @st.cache_data(show_spinner="미수 현황 계산 중…")
-def _dashboard_html(_fp, basis_iso):
+def _dashboard_html(_fp, basis_iso, admin):
     import dashboard as _dash
-    return _dash.render(DATA, datetime.date.fromisoformat(basis_iso), _duerules())
+    return _dash.render(DATA, datetime.date.fromisoformat(basis_iso), _duerules(), admin=admin)
 
 def page_dashboard():
     bd = basis_date() or datetime.date.today()
@@ -163,7 +163,7 @@ def page_dashboard():
     try:
         _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,
                len(glob.glob(os.path.join(DATA, "*", "*.xlsx"))))
-        _components.html(_dashboard_html(_fp, bd.isoformat()), height=760, scrolling=True)
+        _components.html(_dashboard_html(_fp, bd.isoformat(), ADMIN), height=760, scrolling=True)
     except Exception as e:
         header(); st.error(f"대시보드 생성 오류: {e}")
 
@@ -216,6 +216,24 @@ def page_process():
             st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
 
     if ADMIN:
+        with st.expander("🔄 전체 다시 계산 (설정 변경 반영)"):
+            st.caption("결제조건·별칭 등 설정만 바꿨을 때, 업로드 없이 전체 거래처의 상태·파일명을 현재 기준일로 다시 계산합니다.")
+            if st.button("전체 다시 계산 실행", key="recalc_all"):
+                work = tempfile.mkdtemp(); out_dir = os.path.join(work, "out"); os.makedirs(out_dir, exist_ok=True)
+                with st.spinner("전체 거래처 다시 계산 중… (수십 초)"):
+                    try:
+                        res = pipeline.process({"서울": [], "화성": []}, DATA, out_dir, ref_date=basis_date())
+                        ok, probs = pipeline.verify(out_dir, DATA)
+                    except Exception as e:
+                        ok = False; probs = [str(e)]
+                    if ok:
+                        store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
+                        saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "recompute all statuses")
+                        st.cache_data.clear()
+                        st.success("전체 다시 계산 완료 — 상태·파일명을 갱신했습니다." + ("  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"))
+                    else:
+                        st.error("재계산 검증 실패 — 반영하지 않았습니다."); st.write(probs[:10])
+
         _md = st.session_state.pop("manual_done", None)
         with st.expander("✏️ 거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=bool(_md)):
             if _md: st.success(_md)

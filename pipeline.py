@@ -90,7 +90,7 @@ def _col_max_date(path, keys, today=None):
     return best
 
 # ---------- 누적 처리 ----------
-def process(uploads_by_loc, data_dir, out_dir, progress=None):
+def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
     """uploads_by_loc: {'서울':[paths...], '화성':[paths...]} (지역별 업로드 파일 경로).
     data_dir: 기존 누적본(출력 xlsx들 + 지원표) 폴더. out_dir: 결과 출력 폴더.
     반환: dict(summary=[...], detected={...}, status=Counter, report_path, out_dir)."""
@@ -212,7 +212,7 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None):
                 for e in E.parse_eum(fp):
                     if e.get("수취일"): _bc.append(e["수취일"])
             except Exception: pass
-    basis = max(_bc) if _bc else None
+    basis = (max(_bc) if _bc else None) or ref_date
     _ref = basis or date.today()   # 미수 판정 기준일(자료 최근거래일). 날짜만 지나도 미수로 오판하지 않도록 today 대신 사용
     for loc in uploads_by_loc:
         os.makedirs(os.path.join(out_dir, loc), exist_ok=True)
