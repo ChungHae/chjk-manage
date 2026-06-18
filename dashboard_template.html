@@ -9,7 +9,7 @@
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
 .kpi{background:#fff;border:1px solid #e7ecf3;border-radius:14px;padding:16px 18px;transition:.12s}
 .kpi.hi{background:#1B3A6B;color:#fff;border-color:#1B3A6B}
-.kpi.click{cursor:pointer}.kpi.active{box-shadow:inset 0 0 0 3px #1B3A6B}.kpi.click:hover{box-shadow:inset 0 0 0 3px #1B3A6B}
+.kpi.click{cursor:pointer}.kpi.active{box-shadow:inset 0 0 0 3px #1B3A6B}.kpis:has(.kpi.click:hover) .kpi.active:not(:hover){box-shadow:none}.kpi.click:hover{box-shadow:inset 0 0 0 3px #1B3A6B}
 
 .kpi .k{font-size:13px;color:#6b7a90}.kpi.hi .k{color:#b9cdec}
 .kpi .v{font-size:28px;font-weight:800;margin-top:6px;letter-spacing:-1px}.kpi .v small{font-size:14px;font-weight:600;margin-left:2px}
