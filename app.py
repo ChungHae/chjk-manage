@@ -219,6 +219,14 @@ def page_process():
         with st.expander("🔄 전체 다시 계산 (설정 변경 반영)"):
             st.caption("결제조건·별칭 등 설정만 바꿨을 때, 업로드 없이 전체 거래처의 상태·파일명을 현재 기준일로 다시 계산합니다.")
             if st.button("전체 다시 계산 실행", key="recalc_all"):
+                old = {}
+                for loc in ["서울", "화성"]:
+                    for f in glob.glob(os.path.join(DATA, loc, "*.xlsx")):
+                        nm = os.path.basename(f)
+                        if nm.startswith("_"): continue
+                        mb = re.search(r"(\d{3}-\d{2}-\d{5})", nm)
+                        if mb:
+                            old[mb.group(1)] = ("완납" if "완납" in nm else "장기미수" if "장기미수" in nm else "미수" if "미수" in nm else "진행")
                 work = tempfile.mkdtemp(); out_dir = os.path.join(work, "out"); os.makedirs(out_dir, exist_ok=True)
                 with st.spinner("전체 거래처 다시 계산 중… (수십 초)"):
                     try:
@@ -226,13 +234,20 @@ def page_process():
                         ok, probs = pipeline.verify(out_dir, DATA)
                     except Exception as e:
                         ok = False; probs = [str(e)]
-                    if ok:
-                        store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
-                        saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "recompute all statuses")
-                        st.cache_data.clear()
-                        st.success("전체 다시 계산 완료 — 상태·파일명을 갱신했습니다." + ("  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"))
+                if ok:
+                    changes = [(s[0], s[1], old.get(s[2], "?"), s[3]) for s in res["summary"] if old.get(s[2], s[3]) != s[3]]
+                    store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
+                    saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "recompute all statuses")
+                    st.cache_data.clear()
+                    note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
+                    if changes:
+                        st.success(f"전체 다시 계산 완료 — {len(changes)}곳 상태가 바뀌었습니다." + note)
+                        cdf = pd.DataFrame(changes, columns=["지역", "거래처", "이전", "변경"]).sort_values(["지역", "거래처"]).reset_index(drop=True)
+                        st.dataframe(cdf, use_container_width=True, hide_index=True)
                     else:
-                        st.error("재계산 검증 실패 — 반영하지 않았습니다."); st.write(probs[:10])
+                        st.success("전체 다시 계산 완료 — 바뀐 상태가 없습니다." + note)
+                else:
+                    st.error("재계산 검증 실패 — 반영하지 않았습니다."); st.write(probs[:10])
 
         _md = st.session_state.pop("manual_done", None)
         with st.expander("✏️ 거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=bool(_md)):
