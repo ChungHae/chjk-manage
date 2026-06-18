@@ -30,8 +30,8 @@ def basis_date():
     try: return datetime.date.fromisoformat(open(BASIS, encoding="utf-8").read().strip())
     except Exception: return None
 
-def header(full=True):
-    title = "미수관리 시스템" if full else "관리 시스템"
+def header(full=True, title=None):
+    title = title or ("미수관리 시스템" if full else "관리 시스템")
     bd = basis_date()
     sub = f"현재 자료: {bd.year}년 {bd.month}월 {bd.day}일 기준" if (full and bd) else ""
     st.markdown(
@@ -169,7 +169,7 @@ def page_dashboard():
 
 # ===== 자료 처리 페이지 =====
 def page_process():
-    header()
+    header(title="자료 처리")
     if ADMIN:
         st.markdown(f"<div style='margin:-6px 0 8px;'><span style='background:{NAVY};color:#fff;font-size:12px;font-weight:600;padding:3px 12px;border-radius:6px;'>🔑 관리자 계정</span></div>", unsafe_allow_html=True)
         st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
@@ -283,5 +283,5 @@ ADMIN = st.session_state.get("role") == "admin"
 _pg = st.navigation([
     st.Page(page_dashboard, title="미수 현황", icon="📊", default=True),
     st.Page(page_process, title="자료 처리", icon="🗂"),
-])
+], position="top")
 _pg.run()
