@@ -35,7 +35,7 @@ def header(full=True, title=None):
     bd = basis_date()
     sub = f"현재 자료: {bd.year}년 {bd.month}월 {bd.day}일 기준" if (full and bd) else ""
     st.markdown(
-        f"<div style='display:flex;align-items:center;gap:18px;border-bottom:2px solid {NAVY};padding-bottom:12px;margin:0 0 16px;'>"
+        f"<div style='display:flex;align-items:center;gap:18px;border-bottom:2px solid {NAVY};padding-bottom:12px;margin:6px 0 16px;'>"
         f"<img src='{LOGO}' style='height:52px;width:auto;object-fit:contain;' onerror=\"this.style.display='none'\">"
         f"<div><div style='font-size:22px;font-weight:600;color:{NAVY};line-height:1.25;'>{title}</div>"
         f"<div style='font-size:12px;letter-spacing:2px;color:#888;'>{sub}</div></div></div>",
@@ -163,7 +163,7 @@ def page_dashboard():
     try:
         _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,
                len(glob.glob(os.path.join(DATA, "*", "*.xlsx"))))
-        _components.html(_dashboard_html(_fp, bd.isoformat()), height=1000, scrolling=True)
+        _components.html(_dashboard_html(_fp, bd.isoformat()), height=760, scrolling=True)
     except Exception as e:
         header(); st.error(f"대시보드 생성 오류: {e}")
 
