@@ -8,7 +8,7 @@ import pipeline, store
 st.set_page_config(page_title="충해전기 관리시스템", page_icon="📒", layout="wide")
 import streamlit.components.v1 as _components
 _components.html("<script>window.parent.document.title='충해전기 관리시스템';</script>", height=0)
-st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1320px;margin:0 auto;padding-top:1.4rem;padding-left:3rem;padding-right:3rem;}</style><style>iframe[height='0']{display:none;}</style>", unsafe_allow_html=True)
+st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1320px;margin:0 auto;padding-top:1.4rem;padding-left:3rem;padding-right:3rem;}@media(max-width:640px){.block-container{padding-left:0.7rem!important;padding-right:0.7rem!important;}}</style><style>iframe[height='0']{display:none;}</style>", unsafe_allow_html=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOGO = "https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg"
 NAVY = "#1B3A6B"
