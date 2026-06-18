@@ -147,13 +147,15 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
         exist[(loc, bn)] = f; universe[loc][E.cname(nm)] = nm
     # 4) 매출/매입 파싱
     sales = {loc: [] for loc in uploads_by_loc}; sales_tot = defaultdict(int); purch_tot = defaultdict(int); names = {}
+    purch_inv = {loc: [] for loc in uploads_by_loc}
     for loc in uploads_by_loc:
         for fp in detected[loc]["매출"]:
             for x in E.parse_sales(fp):
                 sales[loc].append(x); sales_tot[x["사업자번호"]] += x["합계"]; names[x["사업자번호"]] = x["거래처"]
                 universe[loc].setdefault(E.cname(x["거래처"]), x["거래처"])
         for fp in detected[loc]["매입"]:
-            for x in E.parse_purchase(fp): purch_tot[x["사업자번호"]] += x["합계"]
+            for x in E.parse_purchase(fp):
+                purch_tot[x["사업자번호"]] += x["합계"]; purch_inv[loc].append(x)
     skip = {bn for bn in sales_tot if purch_tot.get(bn, 0) > sales_tot[bn] and purch_tot.get(bn, 0) > 0} | excluded
     # 5) nb_map
     nb_map = defaultdict(dict)
@@ -262,6 +264,25 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
             if not os.path.exists(d): shutil.copy(f, d)
     # 지원표도 출력 폴더로 복사
     for tbl in glob.glob(os.path.join(data_dir, "_*.xlsx")): shutil.copy(tbl, os.path.join(out_dir, os.path.basename(tbl)))
+    # 매출 현황용 세금계산서 누적(승인번호 dedup). 월별/거래처 집계는 sales.py가 수행.
+    import json as _json
+    sstore = {"매출": {}, "매입": {}}
+    _sp = os.path.join(data_dir, "_매출집계.json")
+    if os.path.exists(_sp):
+        try: sstore = _json.load(open(_sp, encoding="utf-8"))
+        except Exception: sstore = {"매출": {}, "매입": {}}
+    sstore.setdefault("매출", {}); sstore.setdefault("매입", {})
+    def _ikey(x):
+        k = str(x.get("승인번호", "")).strip()
+        return k if (k and k.lower() != "nan") else f"{x['작성일']}|{x['사업자번호']}|{x['합계']}"
+    def _sup(x):
+        return int(x["공급가"]) if x.get("공급가") is not None else int(round(x["합계"] / 1.1))
+    for loc in uploads_by_loc:
+        for x in sales[loc]:
+            sstore["매출"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "biz": x["사업자번호"], "name": x["거래처"], "sup": _sup(x)}
+        for x in purch_inv[loc]:
+            sstore["매입"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "sup": _sup(x)}
+    _json.dump(sstore, open(os.path.join(out_dir, "_매출집계.json"), "w", encoding="utf-8"), ensure_ascii=False)
     status = Counter(s[3] for s in summary)
     new_companies = [s[1] for s in summary if s[8] == "신규"]
     return dict(summary=summary, detected=detected, status=dict(status), unassigned=unassigned,

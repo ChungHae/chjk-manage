@@ -29,6 +29,7 @@ def _replace(work_dir, src_dir):
         if os.path.isdir(dst): shutil.rmtree(dst)
         shutil.copytree(src, dst)
     for t in glob.glob(os.path.join(src_dir, "_*.xlsx")): shutil.copy(t, work_dir)
+    for t in glob.glob(os.path.join(src_dir, "_*.json")): shutil.copy(t, work_dir)
 
 def apply_update(out_dir, work_dir, data_zip, backup_zip):
     """갱신 전 현재본을 _직전본.zip으로 백업 → work_dir 교체 → data.zip 재생성."""
