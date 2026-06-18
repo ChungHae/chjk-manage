@@ -1,0 +1,234 @@
+<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name=viewport content='width=device-width,initial-scale=1'><title>충해전기 매출 현황</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap");
+*{box-sizing:border-box}html{overflow-y:auto}body{margin:0;font-family:"Source Sans","Source Sans 3",sans-serif;background:#fff;color:#1A1A1A;position:relative}
+.wrap{max-width:100%;margin:0;padding:6px 0 44px}
+.top{display:flex;align-items:center;gap:18px;border-bottom:2px solid #1B3A6B;padding:0 0 12px;margin-bottom:18px}
+.logo{height:52px;width:auto;object-fit:contain}.htitle{font-size:22px;font-weight:600;color:#1B3A6B;line-height:1.25}.hsub{font-size:13px;letter-spacing:.3px;color:#6b7a90;margin-top:3px}
+.abadge{margin-left:auto;align-self:center;background:#1B3A6B;color:#fff;font-size:12px;font-weight:600;padding:5px 13px;border-radius:7px}
+.sel{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.years{display:flex;gap:6px;flex:1 1 auto;min-width:0;align-items:center}
+.regtoggle{display:flex;gap:6px;flex-wrap:wrap}
+.ymore{position:relative;display:flex}
+.ydrop{position:absolute;top:calc(100% + 6px);left:0;background:#fff;border:1px solid #d6deea;border-radius:10px;box-shadow:0 12px 30px rgba(20,30,50,.16);padding:6px;display:none;z-index:60;flex-direction:column;gap:4px;min-width:96px;max-height:300px;overflow:auto}
+.ydrop.open{display:flex}
+.ydrop button{width:100%}
+.years button{padding:8px 14px;border:1px solid #d6deea;background:#fff;border-radius:9px;font-size:14px;cursor:pointer;color:#445;font-weight:600}
+.years button.on{background:#1B3A6B;color:#fff;border-color:#1B3A6B}
+.regtoggle{border:1px solid #d6deea;border-radius:10px;overflow:hidden;flex-wrap:nowrap}
+.regtoggle button{border:none;background:#fff;padding:8px 16px;font-size:13px;cursor:pointer;color:#445;border-left:1px solid #eef1f6}
+.regtoggle button:first-child{border-left:none}.regtoggle button.on{background:#1B3A6B;color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid #e7ecf3;border-radius:14px;padding:16px 18px}
+.kpi.hi{background:#1B3A6B;color:#fff;border-color:#1B3A6B}
+.kpi .k{font-size:13px;color:#6b7a90}.kpi.hi .k{color:#b9cdec}
+.kpi .v{font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-1px}.kpi .v small{font-size:14px;font-weight:600;margin-left:2px}
+.kpi .x{font-size:12px;color:#9aa7b8;margin-top:3px}.kpi.hi .x{color:#9fb6db}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:#fff;border:1px solid #e7ecf3;border-radius:14px;padding:16px 18px}
+.card.full{margin-bottom:16px}
+.cardhd{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.cardhd h3{margin:0}
+.card h3{font-size:15px;margin:0 0 12px;color:#1B3A6B}.card h3 span{font-size:12px;color:#9aa7b8;font-weight:500}
+.row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:12.5px}.row.vh{margin:0 0 4px;font-size:11px}
+.row .lab{width:54px;flex:none;color:#445;font-weight:600}
+.bars{flex:1;display:flex;flex-direction:column;gap:3px}
+.bwrap{background:#EAF1FB;border-radius:5px;height:14px;overflow:hidden}.bfill{height:100%;border-radius:5px}
+#regsplit .val{width:230px}
+.row .val{width:150px;flex:none;text-align:right;font-variant-numeric:tabular-nums;color:#333}
+.lg{font-size:11px;color:#6b7a90;display:flex;gap:14px;margin-bottom:6px}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.splitbar{display:flex;height:48px;border-radius:10px;overflow:hidden;margin:4px 0 10px}
+.splitbar div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 10px;border-bottom:1px solid #eef1f6;text-align:left}
+th{font-size:12px;color:#6b7a90;font-weight:600;background:#fafbfd}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}td.r{color:#9aa7b8;text-align:center;width:46px;white-space:nowrap}th.r{text-align:center;white-space:nowrap}
+.rkbar{background:#EAF1FB;border-radius:5px;height:16px;overflow:hidden}.rkbar div{height:100%;background:#1B3A6B;border-radius:5px}
+.pct{font-weight:700;color:#1B3A6B}
+tr.etc td{color:#6b7a90;background:#fafbfd}
+tr.sum td{font-weight:700;color:#1B3A6B;border-top:2px solid #dfe6f0;background:#f4f7fc}
+.ranktbls{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+.ranktbls td.nm{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rankfoot{margin-top:4px}
+@media(max-width:760px){.ranktbls{grid-template-columns:1fr}}
+.note{font-size:12px;color:#9aa7b8;margin-top:8px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+@media(max-width:620px){.kpis{grid-template-columns:1fr 1fr}.wrap{padding:1rem 1rem 40px}.row .val{width:120px}}
+.corow{cursor:pointer}.corow:hover td{background:#eef3fb}
+.mback{position:absolute;top:0;left:0;width:100%;height:100%;background:transparent;display:none;z-index:200}
+.mback.open{display:block}
+.mbox{position:absolute;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;width:calc(100% - 32px);max-width:520px;max-height:82vh;overflow:auto;padding:22px 26px;box-shadow:0 24px 70px rgba(20,30,50,.28),0 0 110px 26px rgba(27,58,107,.20)}
+.mbox h3{margin:0 0 8px;color:#1B3A6B;font-size:19px;padding-right:26px}
+.msub{font-size:12.5px;color:#6b7a90;margin-bottom:12px}
+.mclose{position:absolute;top:13px;right:16px;border:none;background:none;font-size:22px;line-height:1;color:#9aa7b8;cursor:pointer}
+</style></head><body><div class=wrap>
+<div class=top><img class=logo src="https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg" onerror="this.style.display='none'"><div><div class=htitle>매출 현황</div><div class=hsub id=hsub>현재 자료: @@SBASIS@@ 기준</div></div>@@ADMINBADGE@@</div>
+
+<div class=sel>
+ <div class=years id=years></div>
+ <div class=regtoggle id=reg><button data-r=전체 class=on>전체</button><button data-r=서울>서울</button><button data-r=화성>화성</button></div>
+</div>
+
+<div class=kpis id=kpis></div>
+
+<div class="card full"><h3 id=regTitle>서울·화성 매출 비중</h3><div id=regsplit></div></div>
+
+<div class=grid2>
+ <div class=card><h3>연도별 매출·매입 추이 <span id=trendSub></span></h3>
+   <div class=lg><span><i style="background:#1B3A6B"></i>매출</span><span><i style="background:#3A6BB0"></i>매입</span></div>
+   <div class="row vh"><div class=lab></div><div class=bars></div><div class=val><b style="color:#1B3A6B">매출</b> / <span style="color:#9aa7b8">매입</span></div></div><div id=trend></div></div>
+ <div class=card><h3 id=monthTitle>월별 매출·매입</h3>
+   <div class=lg><span><i style="background:#1B3A6B"></i>매출</span><span><i style="background:#3A6BB0"></i>매입</span></div>
+   <div class="row vh"><div class=lab></div><div class=bars></div><div class=val><b style="color:#1B3A6B">매출</b> / <span style="color:#9aa7b8">매입</span></div></div><div id=month></div></div>
+</div>
+
+<div class="card full"><div class=cardhd><h3 id=rankTitle>거래처 판매 순위 TOP</h3><div class=regtoggle id=reg2><button data-r=전체 class=on>전체</button><button data-r=서울>서울</button><button data-r=화성>화성</button></div></div><div id=rank></div></div>
+<div class=note>홈택스 매입·매출 계산서 기준 (부가세 별도). ※ 미리보기 — 숫자는 올려주신 매입매출 자료 기준입니다. 2026년은 4월까지의 자료입니다. 비중(%)은 해당 연도·지역 매출 합계 대비입니다.</div>
+</div>
+<div class=mback id=mback onclick="if(event.target===this)closeModal()"><div class=mbox id=mbox><button class=mclose onclick="closeModal()">&times;</button><h3 id=mtitle></h3><div id=mbody></div></div></div>
+<script>
+const D=@@DATA@@;
+const YL=Object.keys(D.years).sort();   // 데이터에 있는 모든 연도(오름차순)
+let Y="2026", R="전체";
+const won=x=>Math.round(x).toLocaleString("ko-KR");
+const eok=x=>(x/1e8).toFixed(1)+"억";
+const fmt=x=>{x=x||0;if(Math.abs(x)>=1e8)return(x/1e8).toFixed(1)+"억";if(Math.abs(x)>=1e4)return Math.round(x/1e4).toLocaleString()+"만";return won(x);};
+const num=v=>v==null?0:v;
+function yt(y){let so=0,sh=0,bo=0,bh=0;(D.years[y]||[]).forEach(m=>{so+=num(m.매출서울);sh+=num(m.매출화성);bo+=num(m.매입서울);bh+=num(m.매입화성);});return{매출서울:so,매출화성:sh,매입서울:bo,매입화성:bh};}
+function totals(y){if(y==="전체"){let t={매출서울:0,매출화성:0,매입서울:0,매입화성:0};YL.forEach(yy=>{const a=yt(yy);t.매출서울+=a.매출서울;t.매출화성+=a.매출화성;t.매입서울+=a.매입서울;t.매입화성+=a.매입화성;});return t;}return yt(y);}
+function pick(t){if(R==="서울")return{매출:t.매출서울,매입:t.매입서울};if(R==="화성")return{매출:t.매출화성,매입:t.매입화성};return{매출:t.매출서울+t.매출화성,매입:t.매입서울+t.매입화성};}
+function renderKPI(){
+  const t=totals(Y),p=pick(t),prof=p.매출-p.매입,mar=p.매출?prof/p.매출:0;
+  let chg=null; if(Y!=="전체"){const i=YL.indexOf(Y); if(i>0){const pp=pick(totals(YL[i-1])); if(pp.매출)chg=(p.매출-pp.매출)/pp.매출;}}
+  const lab=(Y==="전체"?"전 기간":Y+"년")+" "+R;
+  document.getElementById("kpis").innerHTML=
+   `<div class="kpi hi"><div class=k>${lab} 매출</div><div class=v>${eok(p.매출)}<small>원</small></div><div class=x>${won(p.매출)}원</div></div>`+
+   `<div class=kpi><div class=k>매입</div><div class=v>${eok(p.매입)}<small>원</small></div><div class=x>${won(p.매입)}원</div></div>`+
+   `<div class=kpi><div class=k>매출총이익</div><div class=v>${eok(prof)}<small>원</small></div><div class=x>${won(prof)}원</div></div>`+
+   `<div class=kpi><div class=k>마진율</div><div class=v>${(mar*100).toFixed(1)}<small>%</small></div><div class=x>${chg!=null?"전년比 매출 "+(chg>=0?"+":"")+(chg*100).toFixed(1)+"%":""}</div></div>`;
+}
+function renderRegSplit(){
+  document.getElementById("regTitle").innerHTML=`서울·화성 매출 <span>· ${Y==="전체"?"전 기간":Y+"년"}</span>`;
+  const t=totals(Y), so=t.매출서울, sh=t.매출화성, mx=Math.max(so,sh,1);
+  document.getElementById("regsplit").innerHTML=
+    `<div class=row><div class=lab>서울</div><div class=bars><div class=bwrap style="height:18px"><div class=bfill style="width:${Math.max(2,so/mx*100)}%;background:#1B3A6B"></div></div></div><div class=val>${fmt(so)} <span style="color:#9aa7b8">/ ${won(so)}원</span></div></div>`+
+    `<div class=row><div class=lab>화성</div><div class=bars><div class=bwrap style="height:18px"><div class=bfill style="width:${Math.max(2,sh/mx*100)}%;background:#3A6BB0"></div></div></div><div class=val>${fmt(sh)} <span style="color:#9aa7b8">/ ${won(sh)}원</span></div></div>`+
+    `<div class=note>합계 매출 ${won(so+sh)}원</div>`;
+}
+
+function renderTrend(){
+  document.getElementById("trendSub").textContent="· "+R;
+  const YS=YL.slice(-12);   // 최근 12개 연도만 (그 이상이면 과거부터 제외)
+  let mx=0; YS.forEach(y=>{const p=pick(yt(y));mx=Math.max(mx,p.매출,p.매입);});
+  document.getElementById("trend").innerHTML=YS.map(y=>{
+    const p=pick(yt(y)); const on=y===Y?'style="font-weight:800;color:#1B3A6B"':'';
+    return `<div class=row><div class=lab ${on}>${y}</div><div class=bars>`+
+      `<div class=bwrap><div class=bfill style="width:${Math.max(2,p.매출/mx*100)}%;background:#1B3A6B"></div></div>`+
+      `<div class=bwrap><div class=bfill style="width:${Math.max(2,p.매입/mx*100)}%;background:#3A6BB0"></div></div></div>`+
+      `<div class=val>${fmt(p.매출)} <span style="color:#9aa7b8">/ ${fmt(p.매입)}</span></div></div>`;
+  }).join("");
+}
+
+function renderMonth(){
+  document.getElementById("monthTitle").innerHTML=`월별 매출·매입 <span>· ${Y==="전체"?"전 기간":Y+"년"} · ${R}</span>`;
+  if(Y==="전체"){document.getElementById("month").innerHTML='<div class=note>월별은 특정 연도를 선택하면 표시됩니다.</div>';return;}
+  const ms=D.years[Y]||[]; const pk=m=>R==="전체"?{s:num(m.매출서울)+num(m.매출화성),b:num(m.매입서울)+num(m.매입화성)}:R==="서울"?{s:num(m.매출서울),b:num(m.매입서울)}:{s:num(m.매출화성),b:num(m.매입화성)};
+  let mx=0; ms.forEach(m=>{const p=pk(m);mx=Math.max(mx,p.s,p.b);});
+  if(!mx){document.getElementById("month").innerHTML='<div class=note>해당 자료가 없습니다.</div>';return;}
+  document.getElementById("month").innerHTML=ms.map(m=>{const p=pk(m);if(!p.s&&!p.b)return"";
+    return `<div class=row><div class=lab>${m.월}</div><div class=bars>`+
+      `<div class=bwrap><div class=bfill style="width:${Math.max(1,p.s/mx*100)}%;background:#1B3A6B"></div></div>`+
+      `<div class=bwrap><div class=bfill style="width:${Math.max(1,p.b/mx*100)}%;background:#3A6BB0"></div></div></div>`+
+      `<div class=val>${fmt(p.s)} <span style="color:#9aa7b8">/ ${fmt(p.b)}</span></div></div>`;}).join("");
+}
+function renderRank(){
+  document.getElementById("rankTitle").innerHTML=`거래처 판매 순위 TOP <span>· ${Y==="전체"?"전 기간":Y+"년"} · ${R} · 상위 20 + 기타</span>`;
+  const all=(D.rank[Y+"|"+R]||[]); const tot=all.reduce((a,z)=>a+z.매출액,0);
+  const list=all.slice(0,20);
+  if(!list.length){document.getElementById("rank").innerHTML='<div class=note>자료 없음</div>';return;}
+  const mx=list[0].매출액;
+  const cell=(z,idx)=>{const pc=tot?z.매출액/tot*100:0;
+    return `<tr class=corow data-co="${z.업체.replace(/"/g,'&quot;')}"><td class=r>${idx+1}</td><td class=nm title="${z.업체}">${z.업체}</td><td><div class=rkbar><div style="width:${Math.max(3,z.매출액/mx*100)}%"></div></div></td><td class=num>${fmt(z.매출액)}</td><td class="num pct">${pc.toFixed(1)}%</td></tr>`;};
+  const thead='<thead><tr><th class=r>순위</th><th>거래처</th><th style="width:24%"></th><th class=num>매출액</th><th class=num>비중</th></tr></thead>';
+  const half=Math.ceil(list.length/2);
+  const colL=list.slice(0,half).map((z,i)=>cell(z,i)).join("");
+  const colR=list.slice(half).map((z,i)=>cell(z,i+half)).join("");
+  let out='<div class=ranktbls><table>'+thead+'<tbody>'+colL+'</tbody></table><table>'+thead+'<tbody>'+colR+'</tbody></table></div>';
+  const rest=all.slice(20); let foot='';
+  if(rest.length){const rs=rest.reduce((a,z)=>a+z.매출액,0); const pc=tot?rs/tot*100:0;
+    foot+=`<tr class=etc><td class=r>–</td><td>기타 ${rest.length}곳</td><td></td><td class=num>${fmt(rs)}</td><td class="num pct">${pc.toFixed(1)}%</td></tr>`;}
+  foot+=`<tr class=sum><td class=r></td><td>합계 (${all.length}곳)</td><td></td><td class=num>${won(tot)}원</td><td class="num pct">100%</td></tr>`;
+  out+='<table class=rankfoot><tbody>'+foot+'</tbody></table>';
+  document.getElementById("rank").innerHTML=out;
+}
+
+function companyYears(name, reg){
+  return YL.slice(-10).map(y=>{   // 최근 10년치만
+    const find=r=>{const a=(D.rank[y+"|"+r]||[]).find(z=>z.업체===name);return a?a.매출액:0;};
+    const so=find("서울"), hw=find("화성"), amt=find(reg);
+    const li=(D.rank[y+"|"+reg]||[]); const idx=li.findIndex(z=>z.업체===name);
+    return {y, so, hw, amt, rank: idx>=0?idx+1:null};
+  });
+}
+function openCompany(name){
+  const reg=R;
+  const ys=companyYears(name, reg); const mx=Math.max(1,...ys.map(d=>d.amt));
+  const sumv=ys.reduce((a,d)=>a+d.amt,0);
+  const rows=ys.map(d=>{
+    const sub=(reg==="전체"&&d.so&&d.hw)?`서울 ${fmt(d.so)} / 화성 ${fmt(d.hw)}`:"";
+    return `<div class=row><div class=lab>${d.y}</div><div class=bars><div class=bwrap style="height:16px"><div class=bfill style="width:${Math.max(d.amt?2:0,d.amt/mx*100)}%;background:#1B3A6B"></div></div></div><div class=val>${d.amt?fmt(d.amt):"-"} <span style="color:#9aa7b8">${d.rank?"· "+reg+" "+d.rank+"위":""}</span></div></div>`+
+      (sub?`<div style="margin:-4px 0 6px 64px;font-size:11px;color:#9aa7b8">${sub}</div>`:"");
+  }).join("");
+  document.getElementById("mtitle").textContent=name;
+  document.getElementById("mbody").innerHTML=
+    `<div class=msub><b>${reg}</b> 기준 연도별 매출 (계산서)</div>`+
+    `<div class="row vh" style="margin:0 0 4px"><div class=lab></div><div class=bars></div><div class=val><b style="color:#1B3A6B">매출</b> / ${reg} 순위</div></div>`+rows;
+  const _c=visTop()+(window.top.innerHeight||window.innerHeight)/2;document.getElementById("mbox").style.top=_c+"px";document.getElementById("mback").classList.add("open");fitVP();
+}
+function closeModal(){document.getElementById("mback").classList.remove("open");}
+function renderAll(){renderKPI();renderRegSplit();renderTrend();renderMonth();renderRank();fitVP();}
+function buildYears(){
+  const yrs=Object.keys(D.years).sort();
+  document.getElementById("years").innerHTML=
+    '<button type=button data-y=전체>전체</button>'+
+    '<div class=ymore id=ymore style="display:none"><button type=button id=ymoreBtn data-more=1>⋯</button><div class=ydrop id=ydrop></div></div>'+
+    yrs.map(y=>'<button type=button data-y="'+y+'">'+y+'</button>').join("");
+}
+function setYearActive(){
+  document.querySelectorAll('#years button[data-y]').forEach(x=>x.classList.toggle('on', x.dataset.y===Y));
+  const mb=document.getElementById('ymoreBtn'); if(mb)mb.classList.toggle('on', !!document.querySelector("#ydrop button[data-y='"+Y+"']"));
+}
+function reflowYears(){
+  const years=document.getElementById("years"), ymore=document.getElementById("ymore"), ydrop=document.getElementById("ydrop");
+  const yrs=Object.keys(D.years).sort(); const btns={};
+  years.querySelectorAll('button[data-y]').forEach(b=>{btns[b.dataset.y]=b;});
+  ydrop.querySelectorAll('button[data-y]').forEach(b=>{btns[b.dataset.y]=b;});
+  yrs.forEach(y=>{if(btns[y])years.appendChild(btns[y]);});   // 모두 본행으로(오름차순)
+  ydrop.innerHTML=""; ymore.style.display="none";
+  let i=0;
+  while(years.scrollWidth>years.clientWidth+1 && i<yrs.length-1){ ymore.style.display=""; ydrop.appendChild(btns[yrs[i]]); i++; }
+  setYearActive();
+}
+document.getElementById("years").addEventListener("click",function(e){
+  const b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.more){document.getElementById("ydrop").classList.toggle("open");return;}
+  if(!b.dataset.y)return;
+  Y=b.dataset.y; document.getElementById("ydrop").classList.remove("open"); setYearActive(); renderAll();
+});
+document.addEventListener("click",function(e){ if(!e.target.closest("#ymore")){const d=document.getElementById("ydrop"); if(d)d.classList.remove("open");}});
+function setRegion(r){R=r;document.querySelectorAll("#reg button,#reg2 button").forEach(x=>x.classList.toggle("on",x.dataset.r===r));renderAll();}
+document.querySelectorAll("#reg button,#reg2 button").forEach(b=>b.onclick=()=>setRegion(b.dataset.r));
+buildYears();
+Y=(Object.keys(D.years).sort().slice(-1)[0])||"전체";
+reflowYears();
+renderAll();
+window.addEventListener("resize",function(){reflowYears();fitVP();});
+document.getElementById("rank").addEventListener("click",function(e){const tr=e.target.closest("tr[data-co]");if(tr)openCompany(tr.dataset.co);});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal();});
+function topOff(){try{let o=0,w=window;while(w!==window.top&&w.frameElement){o+=w.frameElement.getBoundingClientRect().top+(w.parent.scrollY||w.parent.pageYOffset||0);w=w.parent;}return o;}catch(e){return 0;}}
+function fitVP(){try{const fe=window.frameElement;if(fe)fe.style.height=(document.documentElement.scrollHeight+8)+"px";}catch(e){}}
+function visTop(){try{return (window.top.scrollY||window.top.pageYOffset||0)-topOff();}catch(e){return 0;}}
+fitVP();setTimeout(fitVP,150);setTimeout(fitVP,600);setTimeout(fitVP,1500);
+try{document.fonts&&document.fonts.ready.then(fitVP);}catch(e){}
+window.addEventListener("load",fitVP);
+try{window.top.addEventListener("resize",fitVP);}catch(e){window.addEventListener("resize",fitVP);}
+</script></body></html>
