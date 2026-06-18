@@ -80,4 +80,8 @@ def render(data_dir, basis, duerules, template_path=None, admin=False):
     tpl = open(tp, encoding='utf-8').read()
     bk = f"{basis.year}년 {basis.month}월 {basis.day}일"
     badge = ("<div style='margin:-10px 0 8px'><span style='background:#1B3A6B;color:#fff;font-size:12px;"
-             "font-weight:600;padding:3px 12px
+             "font-weight:600;padding:3px 12px;border-radius:6px'>🔑 관리자 계정</span></div>") if admin else ""
+    return (tpl.replace('@@DATA@@', json.dumps(data, ensure_ascii=False))
+               .replace('@@CHARTS@@', charts)
+               .replace('@@BASIS@@', bk)
+               .replace('@@ADMINBADGE@@', badge))
