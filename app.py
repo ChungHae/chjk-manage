@@ -43,6 +43,7 @@ def header(full=True):
 
 def check_pw():
     if st.session_state.get("auth"): return True
+    st.markdown("<style>[data-testid='stSidebar'],[data-testid='stSidebarCollapsedControl'],[data-testid='stSidebarCollapseButton']{display:none!important;}</style>", unsafe_allow_html=True)
     header(full=False)
     pw_admin = st.secrets.get("password_admin", st.secrets.get("password", os.environ.get("APP_PW", "chunghae")))
     pw_view = st.secrets.get("password_view", os.environ.get("APP_PW_VIEW", ""))
