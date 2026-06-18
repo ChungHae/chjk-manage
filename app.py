@@ -8,7 +8,7 @@ import pipeline, store
 st.set_page_config(page_title="충해전기 관리시스템", page_icon="📒", layout="wide")
 import streamlit.components.v1 as _components
 _components.html("<script>window.parent.document.title='충해전기 관리시스템';</script>", height=0)
-st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1180px;margin:0 auto;padding-top:2.2rem;padding-left:3rem;padding-right:3rem;}</style><style>iframe[height='0']{display:none;}</style>", unsafe_allow_html=True)
+st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1320px;margin:0 auto;padding-top:1.4rem;padding-left:3rem;padding-right:3rem;}</style><style>iframe[height='0']{display:none;}</style>", unsafe_allow_html=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOGO = "https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg"
 NAVY = "#1B3A6B"
@@ -35,7 +35,7 @@ def header(full=True, title=None):
     bd = basis_date()
     sub = f"현재 자료: {bd.year}년 {bd.month}월 {bd.day}일 기준" if (full and bd) else ""
     st.markdown(
-        f"<div style='display:flex;align-items:center;gap:18px;border-bottom:2px solid {NAVY};padding-bottom:12px;margin:4px 0 16px;'>"
+        f"<div style='display:flex;align-items:center;gap:18px;border-bottom:2px solid {NAVY};padding-bottom:12px;margin:0 0 16px;'>"
         f"<img src='{LOGO}' style='height:52px;width:auto;object-fit:contain;' onerror=\"this.style.display='none'\">"
         f"<div><div style='font-size:22px;font-weight:600;color:{NAVY};line-height:1.25;'>{title}</div>"
         f"<div style='font-size:12px;letter-spacing:2px;color:#888;'>{sub}</div></div></div>",
@@ -194,16 +194,24 @@ def page_process():
         if os.path.isdir(DATA):
             st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
 
-    with st.expander("🛟 비상 복구 (직전본)", expanded=False):
+    with st.expander("🛟 비상 복구 (직전본)", expanded=bool(st.session_state.get("confirm_restore"))):
         if os.path.exists(BACKUP_ZIP):
             st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
             bc1, bc2 = st.columns(2)
             bc1.download_button("직전본 다운로드 (서울·화성)", zip_backup_customers(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
             if ADMIN and bc2.button("⏪ 직전본으로 복구"):
-                if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
-                    if GIT_TOKEN: store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "restore previous baseline")
-                    st.session_state.pop("result", None)
-                    st.success("직전본으로 복구했습니다."); st.rerun()
+                st.session_state["confirm_restore"] = True
+            if ADMIN and st.session_state.get("confirm_restore"):
+                st.warning("직전본으로 되돌리면 현재 누적본이 직전 상태로 바뀝니다. 정말 실행하시겠습니까?")
+                rc1, rc2 = st.columns(2)
+                if rc1.button("예, 복구 실행", type="primary", key="do_restore"):
+                    st.session_state.pop("confirm_restore", None)
+                    if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
+                        if GIT_TOKEN: store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "restore previous baseline")
+                        st.session_state.pop("result", None)
+                        st.success("직전본으로 복구했습니다."); st.rerun()
+                if rc2.button("취소", key="cancel_restore"):
+                    st.session_state.pop("confirm_restore", None); st.rerun()
         else:
             st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
 
