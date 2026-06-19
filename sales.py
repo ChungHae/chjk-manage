@@ -81,6 +81,22 @@ def _merge_named(lists, field):
     return sorted(({"업체": v[0], field: v[1]} for v in m.values()), key=lambda r: -r[field])
 
 
+def _clean_corp(s):
+    """표시용 이름에서 법인 표기((주)·주식회사·㈜·(유)·(자) 등) 제거. (오류동) 같은 지점 표기는 유지."""
+    s = str(s or "").replace("（", "(").replace("）", ")")
+    s = re.sub(r"주식회사|유한회사|합자회사|㈜|\(주\)|\(유\)|\(자\)", "", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _disp_buy(name, rep, biz):
+    """매입처 표시명: 상호(법인표기 제거). 상호 없으면 '대표자 (사업자번호)', 그것도 없으면 사업자번호."""
+    nm = _clean_corp(name)
+    if nm and nm.lower() != "nan":
+        return nm
+    rep = str(rep or "").strip()
+    return f"{rep} ({biz})" if rep and rep.lower() != "nan" else str(biz)
+
+
 def build_data(data_dir):
     """과거자료 + 누적분을 합친 매출 현황 데이터(years/summary/rank)."""
     base = load_data(data_dir)
@@ -148,20 +164,22 @@ def build_data(data_dir):
             hbuy = {}
     buyacc = {}
     for rec in (store.get("매입") or {}).values():
-        ym = rec.get("ym", ""); nm = rec.get("name")
-        if not nm or len(ym) < 7 or ym <= boundary:
+        ym = rec.get("ym", "")
+        if len(ym) < 7 or ym <= boundary:
             continue
         reg = rec.get("reg")
         if reg not in ("서울", "화성"):
             continue
-        cn = _cname(nm) or nm
+        biz = str(rec.get("biz") or "")
+        nm = _disp_buy(rec.get("name"), rec.get("rep"), biz)
+        key = biz or nm
         d = buyacc.setdefault((ym[:4], reg), {})
-        if cn in d: d[cn][1] += rec.get("sup", 0)
-        else: d[cn] = [nm, rec.get("sup", 0)]
+        if key in d: d[key][1] += rec.get("sup", 0)
+        else: d[key] = [nm, rec.get("sup", 0)]
     buyrank = {}
     for y in yrs:
         for reg in ("서울", "화성"):
-            base_lst = hbuy.get(f"{y}|{reg}", [])
+            base_lst = [{"업체": _clean_corp(z["업체"]) or z["업체"], "매입액": z["매입액"]} for z in hbuy.get(f"{y}|{reg}", [])]
             acc = [{"업체": v[0], "매입액": v[1]} for v in buyacc.get((y, reg), {}).values()]
             buyrank[f"{y}|{reg}"] = _merge_named([base_lst, acc], "매입액")
         buyrank[f"{y}|전체"] = _merge_named([buyrank[f"{y}|서울"], buyrank[f"{y}|화성"]], "매입액")

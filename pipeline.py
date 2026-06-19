@@ -298,7 +298,7 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
         for x in sales[loc]:
             sstore["매출"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "biz": x["사업자번호"], "name": x["거래처"], "sup": _sup(x)}
         for x in purch_inv[loc]:
-            sstore["매입"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "biz": x["사업자번호"], "name": x["거래처"], "sup": _sup(x)}
+            sstore["매입"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "biz": x["사업자번호"], "name": x["거래처"], "rep": x.get("대표자", ""), "sup": _sup(x)}
     _json.dump(sstore, open(os.path.join(out_dir, "_매출집계.json"), "w", encoding="utf-8"), ensure_ascii=False)
     status = Counter(s[3] for s in summary)
     new_companies = [s[1] for s in summary if s[8] == "신규"]

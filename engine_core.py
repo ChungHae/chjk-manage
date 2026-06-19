@@ -107,6 +107,9 @@ def _parse_tax(path, who_col):
     else:
         cb=[c for c in cols if "공급자사업자등록번호" in str(c)][0]
         cn=cols[[i for i,c in enumerate(cols) if str(c).startswith("상호")][0]]
+    ri=[i for i,c in enumerate(cols) if str(c).startswith("대표자")]
+    if who_col=="공급받는자": rn=cols[ri[1]] if len(ri)>1 else (cols[ri[0]] if ri else None)
+    else: rn=cols[ri[0]] if ri else None
     out=[]
     for _,r in df.iterrows():
         try: amt=int(round(float(re.sub(r"[^\d\-.]","",str(r['합계금액'])))))
@@ -114,7 +117,7 @@ def _parse_tax(path, who_col):
         sup=int(round(float(re.sub(r"[^\d\-.]","",str(r['공급가액']))))) if not pd.isna(r['공급가액']) else None
         out.append(dict(작성일=str(r['작성일자'])[:10],승인번호=str(r['승인번호']).strip(),
             거래처=re.sub(r"\s+"," ",str(r[cn]).replace("（","(").replace("）",")")).strip(),
-            사업자번호=str(r[cb]).strip(),공급가=sup,합계=amt))
+            사업자번호=str(r[cb]).strip(),대표자=(re.sub(r"\s+"," ",str(r[rn])).strip() if rn is not None else ""),공급가=sup,합계=amt))
     return out
 def parse_sales(path): return _parse_tax(path,"공급받는자")
 def parse_purchase(path): return _parse_tax(path,"공급자")
