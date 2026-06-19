@@ -226,18 +226,25 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
             if bn in skip: continue
             path = exist.get((loc, bn)); name = names.get(bn) or (re.sub(r"^[^)]*\)\s*", "", os.path.basename(path)).rsplit(" (", 1)[0] if path else bn)
             inv = cust_inv.get((loc, bn), [])
-            ek = set()
+            ek = set(); ek_eum = set()
             if path:
                 wv = load_workbook(path).active; Cv = E.cols(wv)
                 for r in range(3, wv.max_row+1):
-                    dd = E.pdate(wv.cell(r, Cv["입금일"]).value); dm = wv.cell(r, Cv["입금"]).value
-                    if dd and isinstance(dm, (int, float)): ek.add((dd.isoformat(), int(dm)))
+                    rawdd = wv.cell(r, Cv["입금일"]).value
+                    dd = E.pdate(rawdd); dm = wv.cell(r, Cv["입금"]).value
+                    if dd and isinstance(dm, (int, float)):
+                        ek.add((dd.isoformat(), int(dm)))
+                        mats = re.findall(r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})", str(rawdd))
+                        if len(mats) >= 2:   # 어음: 입금일 셀에 수취일 + (만기) 함께 표기
+                            y, m, da = mats[1]; ek_eum.add((dd.isoformat(), f"{int(y):04d}-{int(m):02d}-{int(da):02d}"))
             nd = []
             for d in cust_dep.get((loc, bn), []):
-                di = d["거래일"]
-                if (di, int(d["입금액"])) in ek: continue
+                di = d["거래일"]; mat = d.get("만기")
+                # 어음: 수취일+만기 동일하면 중복(불량차감 등으로 금액이 달라도 안전하게 제거)
+                if mat and (di, mat) in ek_eum: continue
+                if (di, int(d["입금액"])) in ek: continue   # 일반 입금: 거래일+금액 동일 → 중복
                 ent = {"date": date(*map(int, di.split("-"))), "amt": int(d["입금액"]), "bank": d.get("은행", "")}
-                if d.get("만기"): ent["maturity"] = d["만기"]
+                if mat: ent["maturity"] = mat
                 nd.append(ent)
             if not inv and not nd and not path: continue
             tmp = os.path.join(work, "_o.xlsx"); exc = exceptions.get(bn, set())
