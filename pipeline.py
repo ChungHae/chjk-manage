@@ -214,8 +214,11 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
                 for e in E.parse_eum(fp):
                     if e.get("수취일"): _bc.append(e["수취일"])
             except Exception: pass
-    basis = (max(_bc) if _bc else None) or ref_date
-    _ref = basis or date.today()   # 미수 판정 기준일(자료 최근거래일). 날짜만 지나도 미수로 오판하지 않도록 today 대신 사용
+    basis = max(_bc) if _bc else (ref_date.isoformat() if ref_date else None)  # ISO 문자열 또는 None
+    try:
+        _ref = date.fromisoformat(basis) if basis else (ref_date or date.today())
+    except Exception:
+        _ref = ref_date or date.today()   # 미수 판정 기준일(자료 최근거래일). 항상 date 객체로 보장
     for loc in uploads_by_loc:
         os.makedirs(os.path.join(out_dir, loc), exist_ok=True)
         bset = set(bn for (l, bn) in cust_inv if l == loc) | set(bn for (l, bn) in cust_dep if l == loc) | set(bn for (l, bn) in exist if l == loc)
