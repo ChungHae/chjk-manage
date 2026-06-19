@@ -70,6 +70,17 @@ def _merge_rank(entries_lists):
     return sorted(({"업체": v[0], "매출액": v[1]} for v in m.values()), key=lambda r: -r["매출액"])
 
 
+def _merge_named(lists, field):
+    """[{업체, <field>}...] 들을 정규화명(cname) 기준으로 합산 → 정렬된 리스트."""
+    m = {}
+    for lst in lists:
+        for z in lst:
+            cn = _cname(z["업체"]) or z["업체"]
+            if cn in m: m[cn][1] += z[field]
+            else: m[cn] = [z["업체"], z[field]]
+    return sorted(({"업체": v[0], field: v[1]} for v in m.values()), key=lambda r: -r[field])
+
+
 def build_data(data_dir):
     """과거자료 + 누적분을 합친 매출 현황 데이터(years/summary/rank)."""
     base = load_data(data_dir)
@@ -127,7 +138,37 @@ def build_data(data_dir):
     for reg in ("서울", "화성", "전체"):
         rank[f"전체|{reg}"] = _merge_rank([rank[f"{y}|{reg}"] for y in yrs])
 
-    return {"years": years, "summary": summary, "rank": rank}
+    # 4) 매입처 순위: 과거 _매입자료.json + 누적 매입(업체명 있는 분, boundary 이후) 병합
+    hbuy = {}
+    bp = os.path.join(data_dir, "_매입자료.json")
+    if os.path.exists(bp):
+        try:
+            with open(bp, encoding="utf-8") as fh: hbuy = (json.load(fh) or {}).get("buyrank", {})
+        except Exception:
+            hbuy = {}
+    buyacc = {}
+    for rec in (store.get("매입") or {}).values():
+        ym = rec.get("ym", ""); nm = rec.get("name")
+        if not nm or len(ym) < 7 or ym <= boundary:
+            continue
+        reg = rec.get("reg")
+        if reg not in ("서울", "화성"):
+            continue
+        cn = _cname(nm) or nm
+        d = buyacc.setdefault((ym[:4], reg), {})
+        if cn in d: d[cn][1] += rec.get("sup", 0)
+        else: d[cn] = [nm, rec.get("sup", 0)]
+    buyrank = {}
+    for y in yrs:
+        for reg in ("서울", "화성"):
+            base_lst = hbuy.get(f"{y}|{reg}", [])
+            acc = [{"업체": v[0], "매입액": v[1]} for v in buyacc.get((y, reg), {}).values()]
+            buyrank[f"{y}|{reg}"] = _merge_named([base_lst, acc], "매입액")
+        buyrank[f"{y}|전체"] = _merge_named([buyrank[f"{y}|서울"], buyrank[f"{y}|화성"]], "매입액")
+    for reg in ("서울", "화성", "전체"):
+        buyrank[f"전체|{reg}"] = _merge_named([buyrank[f"{y}|{reg}"] for y in yrs], "매입액")
+
+    return {"years": years, "summary": summary, "rank": rank, "buyrank": buyrank}
 
 
 def _basis_label(data):

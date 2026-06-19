@@ -214,11 +214,15 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
                 for e in E.parse_eum(fp):
                     if e.get("수취일"): _bc.append(e["수취일"])
             except Exception: pass
-    basis = max(_bc) if _bc else (ref_date.isoformat() if ref_date else None)  # ISO 문자열 또는 None
+    _cand = max(_bc) if _bc else None
+    if ref_date:   # 기준일은 과거로 내려가지 않게(항상 최신 유지) — 옛 자료 올려도 미수 안 틀어짐
+        _ri = ref_date.isoformat()
+        if (_cand is None) or (_ri > _cand): _cand = _ri
+    basis = _cand   # ISO 문자열 또는 None
     try:
-        _ref = date.fromisoformat(basis) if basis else (ref_date or date.today())
+        _ref = date.fromisoformat(basis) if basis else date.today()
     except Exception:
-        _ref = ref_date or date.today()   # 미수 판정 기준일(자료 최근거래일). 항상 date 객체로 보장
+        _ref = date.today()   # 미수 판정 기준일(자료 최근거래일). 항상 date 객체로 보장
     for loc in uploads_by_loc:
         os.makedirs(os.path.join(out_dir, loc), exist_ok=True)
         bset = set(bn for (l, bn) in cust_inv if l == loc) | set(bn for (l, bn) in cust_dep if l == loc) | set(bn for (l, bn) in exist if l == loc)
@@ -294,7 +298,7 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
         for x in sales[loc]:
             sstore["매출"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "biz": x["사업자번호"], "name": x["거래처"], "sup": _sup(x)}
         for x in purch_inv[loc]:
-            sstore["매입"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "sup": _sup(x)}
+            sstore["매입"][_ikey(x)] = {"ym": x["작성일"][:7], "reg": loc, "biz": x["사업자번호"], "name": x["거래처"], "sup": _sup(x)}
     _json.dump(sstore, open(os.path.join(out_dir, "_매출집계.json"), "w", encoding="utf-8"), ensure_ascii=False)
     status = Counter(s[3] for s in summary)
     new_companies = [s[1] for s in summary if s[8] == "신규"]

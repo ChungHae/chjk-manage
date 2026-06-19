@@ -24,6 +24,7 @@
 .kpi .k{font-size:13px;color:#6b7a90}.kpi.hi .k{color:#b9cdec}
 .kpi .v{font-size:26px;font-weight:800;margin-top:6px;letter-spacing:-1px}.kpi .v small{font-size:14px;font-weight:600;margin-left:2px}
 .kpi .x{font-size:12px;color:#9aa7b8;margin-top:3px}.kpi.hi .x{color:#9fb6db}
+.kpi.click{cursor:pointer;transition:box-shadow .1s}.kpi.click:hover{box-shadow:inset 0 0 0 2px #1B3A6B}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .card{background:#fff;border:1px solid #e7ecf3;border-radius:14px;padding:16px 18px}
 .card.full{margin-bottom:16px}
@@ -102,7 +103,7 @@ function renderKPI(){
   const lab=(Y==="전체"?"전 기간":Y+"년")+" "+R;
   document.getElementById("kpis").innerHTML=
    `<div class="kpi hi"><div class=k>${lab} 매출</div><div class=v>${eok(p.매출)}<small>원</small></div><div class=x>${won(p.매출)}원</div></div>`+
-   `<div class=kpi><div class=k>매입</div><div class=v>${eok(p.매입)}<small>원</small></div><div class=x>${won(p.매입)}원</div></div>`+
+   `<div class="kpi click" onclick="openBuy()"><div class=k>매입 <span style="font-size:11px;color:#9aa7b8">▸ 매입처</span></div><div class=v>${eok(p.매입)}<small>원</small></div><div class=x>${won(p.매입)}원</div></div>`+
    `<div class=kpi><div class=k>매출총이익</div><div class=v>${eok(prof)}<small>원</small></div><div class=x>${won(prof)}원</div></div>`+
    `<div class=kpi><div class=k>마진율</div><div class=v>${(mar*100).toFixed(1)}<small>%</small></div><div class=x>${chg!=null?"전년比 매출 "+(chg>=0?"+":"")+(chg*100).toFixed(1)+"%":""}</div></div>`;
 }
@@ -185,6 +186,23 @@ function openCompany(name){
   const _c=visTop()+(window.top.innerHeight||window.innerHeight)/2;document.getElementById("mbox").style.top=_c+"px";document.getElementById("mback").classList.add("open");fitVP();
 }
 function closeModal(){document.getElementById("mback").classList.remove("open");fitVP();}
+function openBuy(){
+  const all=(D.buyrank&&D.buyrank[Y+"|"+R])||[];
+  const sub=(Y==="전체"?"전 기간":Y+"년")+" "+R;
+  document.getElementById("mtitle").textContent="매입처 순위";
+  if(!all.length){
+    document.getElementById("mbody").innerHTML=`<div class=msub><b>${sub}</b> · 매입 계산서 기준</div><div class=note>해당 기간 매입처 자료가 없습니다.</div>`;
+  }else{
+    const tot=all.reduce((a,z)=>a+z.매입액,0); const top=all.slice(0,30); const mx=top[0].매입액;
+    const rows=top.map((z,i)=>{const pc=tot?z.매입액/tot*100:0;
+      return `<tr><td class=r>${i+1}</td><td class=nm title="${z.업체}">${z.업체}</td><td><div class=rkbar><div style="width:${Math.max(3,z.매입액/mx*100)}%"></div></div></td><td class=num>${fmt(z.매입액)}</td><td class="num pct">${pc.toFixed(1)}%</td></tr>`;}).join("");
+    const rest=all.slice(30); let foot="";
+    if(rest.length){const rs=rest.reduce((a,z)=>a+z.매입액,0);foot+=`<tr class=etc><td class=r>–</td><td>기타 ${rest.length}곳</td><td></td><td class=num>${fmt(rs)}</td><td class="num pct">${tot?(rs/tot*100).toFixed(1):0}%</td></tr>`;}
+    foot+=`<tr class=sum><td class=r></td><td>합계 (${all.length}곳)</td><td></td><td class=num>${won(tot)}원</td><td class="num pct">100%</td></tr>`;
+    document.getElementById("mbody").innerHTML=`<div class=msub><b>${sub}</b> · 매입 계산서 기준 · 상위 30 + 기타</div><table><thead><tr><th class=r>순위</th><th>매입처</th><th style="width:28%"></th><th class=num>매입액</th><th class=num>비중</th></tr></thead><tbody>${rows}${foot}</tbody></table>`;
+  }
+  const _c=visTop()+(window.top.innerHeight||window.innerHeight)/2;document.getElementById("mbox").style.top=_c+"px";document.getElementById("mback").classList.add("open");fitVP();
+}
 function renderAll(){renderKPI();renderRegSplit();renderTrend();renderMonth();renderRank();fitVP();}
 function buildYears(){
   const yrs=Object.keys(D.years).sort();

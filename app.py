@@ -317,7 +317,7 @@ def page_process():
             def prog(m): logs.append(m); log_area.code("\n".join(logs[-12:]))
             with st.spinner("처리 중… (파일이 많으면 수십 초 걸릴 수 있어요)"):
                 try:
-                    res = pipeline.process(uploads, DATA if os.path.isdir(DATA) else up_dir, out_dir, progress=prog)
+                    res = pipeline.process(uploads, DATA if os.path.isdir(DATA) else up_dir, out_dir, progress=prog, ref_date=basis_date())
                 except Exception as e:
                     st.error(f"처리 오류: {e}"); st.stop()
                 ok, probs = pipeline.verify(out_dir, DATA)
