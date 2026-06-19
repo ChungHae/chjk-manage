@@ -226,26 +226,29 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
             if bn in skip: continue
             path = exist.get((loc, bn)); name = names.get(bn) or (re.sub(r"^[^)]*\)\s*", "", os.path.basename(path)).rsplit(" (", 1)[0] if path else bn)
             inv = cust_inv.get((loc, bn), [])
-            ek = set(); ek_eum = set()
+            # 입금 중복 시그니처: (수취일/거래일, 금액) + 어음은 (만기, 금액)도 함께 등록.
+            # 같은 어음이 ①수취일이 조금 달라지거나 ②만기일에 은행입금으로 들어와도 (만기,금액)으로 중복 제거됨.
+            sig = set()
             if path:
                 wv = load_workbook(path).active; Cv = E.cols(wv)
                 for r in range(3, wv.max_row+1):
                     rawdd = wv.cell(r, Cv["입금일"]).value
                     dd = E.pdate(rawdd); dm = wv.cell(r, Cv["입금"]).value
                     if dd and isinstance(dm, (int, float)):
-                        ek.add((dd.isoformat(), int(dm)))
+                        amt = int(dm); sig.add((dd.isoformat(), amt))
                         mats = re.findall(r"(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})", str(rawdd))
                         if len(mats) >= 2:   # 어음: 입금일 셀에 수취일 + (만기) 함께 표기
-                            y, m, da = mats[1]; ek_eum.add((dd.isoformat(), f"{int(y):04d}-{int(m):02d}-{int(da):02d}"))
+                            y, m, da = mats[1]; sig.add((f"{int(y):04d}-{int(m):02d}-{int(da):02d}", amt))
             nd = []
             for d in cust_dep.get((loc, bn), []):
-                di = d["거래일"]; mat = d.get("만기")
-                # 어음: 수취일+만기 동일하면 중복(불량차감 등으로 금액이 달라도 안전하게 제거)
-                if mat and (di, mat) in ek_eum: continue
-                if (di, int(d["입금액"])) in ek: continue   # 일반 입금: 거래일+금액 동일 → 중복
-                ent = {"date": date(*map(int, di.split("-"))), "amt": int(d["입금액"]), "bank": d.get("은행", "")}
+                di = d["거래일"]; mat = d.get("만기"); amt = int(d["입금액"])
+                if (di, amt) in sig: continue
+                if mat and (mat, amt) in sig: continue
+                ent = {"date": date(*map(int, di.split("-"))), "amt": amt, "bank": d.get("은행", "")}
                 if mat: ent["maturity"] = mat
                 nd.append(ent)
+                sig.add((di, amt))                    # 같은 업로드 묶음 내 중복(어음↔만기 은행입금)도 방지
+                if mat: sig.add((mat, amt))
             if not inv and not nd and not path: continue
             tmp = os.path.join(work, "_o.xlsx"); exc = exceptions.get(bn, set())
             try: res = E.accumulate(path, inv, nd, loc, tmp, exc, eum_tol=eum_tols.get(bn, 0))
