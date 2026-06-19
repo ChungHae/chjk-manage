@@ -223,11 +223,11 @@ window.addEventListener("resize",function(){reflowYears();fitVP();});
 document.getElementById("rank").addEventListener("click",function(e){const tr=e.target.closest("tr[data-co]");if(tr)openCompany(tr.dataset.co);});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal();});
 function topOff(){try{let o=0,w=window;while(w!==window.top&&w.frameElement){o+=w.frameElement.getBoundingClientRect().top+(w.parent.scrollY||w.parent.pageYOffset||0);w=w.parent;}return o;}catch(e){return 0;}}
-function fitVP(){try{const fe=window.frameElement;if(fe)fe.style.height=(document.documentElement.scrollHeight+8)+"px";}catch(e){}}
+function fitVP(){try{const fe=window.frameElement;if(fe){const w=document.querySelector(".wrap");const h=Math.ceil(w?w.getBoundingClientRect().height:document.body.scrollHeight);fe.style.height=(h+6)+"px";}}catch(e){}}
 function visTop(){try{return (window.top.scrollY||window.top.pageYOffset||0)-topOff();}catch(e){return 0;}}
 fitVP();setTimeout(fitVP,150);setTimeout(fitVP,600);setTimeout(fitVP,1500);
 try{document.fonts&&document.fonts.ready.then(fitVP);}catch(e){}
 window.addEventListener("load",fitVP);
 try{window.top.addEventListener("resize",fitVP);}catch(e){window.addEventListener("resize",fitVP);}
-try{new ResizeObserver(function(){fitVP();}).observe(document.body);}catch(e){}
+try{new ResizeObserver(function(){fitVP();}).observe(document.querySelector(".wrap")||document.body);}catch(e){}
 </script></body></html>
