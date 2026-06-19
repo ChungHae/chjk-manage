@@ -169,9 +169,9 @@ def page_dashboard():
 
 # ===== 매출 현황 페이지 =====
 @st.cache_data(show_spinner="매출 현황 불러오는 중…")
-def _sales_html(_fp, admin):
+def _sales_html(_fp, basis_iso, admin):
     import sales as _sales
-    return _sales.render(DATA, admin=admin)
+    return _sales.render(DATA, admin=admin, basis_iso=basis_iso)
 
 def page_sales():
     if not os.path.isdir(DATA):
@@ -181,8 +181,9 @@ def page_sales():
         st.warning("매출 자료(_매출자료.json)가 없습니다. chjk-data의 data.zip에 매출 자료를 포함해 주세요.")
         return
     try:
+        _bd = basis_date()
         _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,)
-        _components.html(_sales_html(_fp, ADMIN), height=900, scrolling=True)
+        _components.html(_sales_html(_fp, _bd.isoformat() if _bd else "", ADMIN), height=900, scrolling=True)
     except Exception as e:
         header(title="매출 현황"); st.error(f"매출 현황 생성 오류: {e}")
 

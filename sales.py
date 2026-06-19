@@ -143,15 +143,26 @@ def _basis_label(data):
     return ""
 
 
-def render(data_dir, admin=False, template_path=None):
-    """매출 현황 HTML 문자열 반환. data_dir 에 _매출자료.json 필요(_매출집계.json 있으면 자동 반영)."""
+def render(data_dir, admin=False, template_path=None, basis_iso=None):
+    """매출 현황 HTML 문자열 반환. data_dir 에 _매출자료.json 필요(_매출집계.json 있으면 자동 반영).
+    basis_iso: 다른 탭과 동일하게 표시할 기준일(YYYY-MM-DD). 없으면 매출자료의 마지막 월."""
     data = build_data(data_dir)
     if data is None:
         return None
     tp = template_path or os.path.join(os.path.dirname(os.path.abspath(__file__)), "sales_template.html")
     tpl = open(tp, encoding="utf-8").read()
+    label = ""
+    if basis_iso:
+        import datetime
+        try:
+            d = datetime.date.fromisoformat(basis_iso)
+            label = f"{d.year}년 {d.month}월 {d.day}일"
+        except Exception:
+            label = ""
+    if not label:
+        label = _basis_label(data)
     badge = ("<div style='margin:-10px 0 8px'><span style='background:#1B3A6B;color:#fff;font-size:12px;"
              "font-weight:600;padding:3px 12px;border-radius:6px'>🔑 관리자 계정</span></div>") if admin else ""
     return (tpl.replace("@@DATA@@", json.dumps(data, ensure_ascii=False))
-               .replace("@@SBASIS@@", _basis_label(data))
+               .replace("@@SBASIS@@", label)
                .replace("@@ADMINBADGE@@", badge))

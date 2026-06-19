@@ -189,9 +189,13 @@ function renderAll(){renderKPI();renderRegSplit();renderTrend();renderMonth();re
 function buildYears(){
   const yrs=Object.keys(D.years).sort();
   document.getElementById("years").innerHTML=
-    '<button type=button data-y=전체>전체</button>'+
-    '<div class=ymore id=ymore style="display:none"><button type=button id=ymoreBtn data-more=1>⋯</button><div class=ydrop id=ydrop></div></div>'+
-    yrs.map(y=>'<button type=button data-y="'+y+'">'+y+'</button>').join("");
+    '<button type=button data-y=전체 onclick="yclick(this)">전체</button>'+
+    '<div class=ymore id=ymore style="display:none"><button type=button id=ymoreBtn data-more=1 onclick="yclick(this)">⋯</button><div class=ydrop id=ydrop></div></div>'+
+    yrs.map(y=>'<button type=button data-y="'+y+'" onclick="yclick(this)">'+y+'</button>').join("");
+}
+function yclick(b){
+  if(b.dataset.more){document.getElementById("ydrop").classList.toggle("open");return;}
+  Y=b.dataset.y; document.getElementById("ydrop").classList.remove("open"); setYearActive(); renderAll();
 }
 function setYearActive(){
   document.querySelectorAll('#years button[data-y]').forEach(x=>x.classList.toggle('on', x.dataset.y===Y));
@@ -208,15 +212,10 @@ function reflowYears(){
   if(years.clientWidth>60){ while(years.scrollWidth>years.clientWidth+1 && i<yrs.length-1){ ymore.style.display=""; ydrop.appendChild(btns[yrs[i]]); i++; } }
   setYearActive();
 }
-function bindYears(){document.querySelectorAll("#years button").forEach(function(b){b.onclick=function(){
-  if(b.dataset.more){document.getElementById("ydrop").classList.toggle("open");return;}
-  Y=b.dataset.y; document.getElementById("ydrop").classList.remove("open"); setYearActive(); renderAll();
-};});}
 document.addEventListener("click",function(e){ if(!e.target.closest("#ymore")){const d=document.getElementById("ydrop"); if(d)d.classList.remove("open");}});
 function setRegion(r){R=r;document.querySelectorAll("#reg button,#reg2 button").forEach(x=>x.classList.toggle("on",x.dataset.r===r));renderAll();}
 document.querySelectorAll("#reg button,#reg2 button").forEach(b=>b.onclick=()=>setRegion(b.dataset.r));
 buildYears();
-bindYears();
 Y=(Object.keys(D.years).sort().slice(-1)[0])||"전체";
 reflowYears();
 renderAll();
@@ -230,4 +229,5 @@ fitVP();setTimeout(fitVP,150);setTimeout(fitVP,600);setTimeout(fitVP,1500);
 try{document.fonts&&document.fonts.ready.then(fitVP);}catch(e){}
 window.addEventListener("load",fitVP);
 try{window.top.addEventListener("resize",fitVP);}catch(e){window.addEventListener("resize",fitVP);}
+try{new ResizeObserver(function(){fitVP();}).observe(document.body);}catch(e){}
 </script></body></html>
