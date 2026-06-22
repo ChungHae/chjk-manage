@@ -1,1 +1,3 @@
 libreoffice-calc
+libreoffice-writer
+fonts-noto-cjk

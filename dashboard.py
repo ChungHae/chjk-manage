@@ -84,4 +84,5 @@ def render(data_dir, basis, duerules, template_path=None, admin=False):
     return (tpl.replace('@@DATA@@', json.dumps(data, ensure_ascii=False))
                .replace('@@CHARTS@@', charts)
                .replace('@@BASIS@@', bk)
+               .replace('@@ADMIN@@', 'true' if admin else 'false')
                .replace('@@ADMINBADGE@@', badge))

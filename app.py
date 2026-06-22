@@ -187,6 +187,101 @@ def page_sales():
     except Exception as e:
         header(title="매출 현황"); st.error(f"매출 현황 생성 오류: {e}")
 
+# ===== 내용증명 페이지 =====
+def _longoverdue_list():
+    """현재 장기미수 거래처(실시간 계산). 상태가 바뀌면 자동 반영."""
+    import dashboard as _dash
+    bd = basis_date() or datetime.date.today()
+    data = _dash.compute_data(DATA, bd, _duerules())
+    lt = [o for o in data if o.get("status") == "장기미수"]
+    lt.sort(key=lambda o: (o["reg"], -o["amt"]))
+    return lt
+
+def _docx_to_pdf(docx_path, out_dir):
+    """LibreOffice headless 로 docx→pdf. 실패 시 None."""
+    import subprocess
+    base = os.path.splitext(os.path.basename(docx_path))[0]
+    for soffice in ("libreoffice", "soffice"):
+        try:
+            subprocess.run([soffice, "--headless", "--convert-to", "pdf", "--outdir", out_dir, docx_path],
+                           check=True, timeout=120, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            pdf = os.path.join(out_dir, base + ".pdf")
+            if os.path.exists(pdf):
+                return pdf
+        except Exception:
+            continue
+    return None
+
+def page_nyung():
+    import nyung
+    header(title="내용증명")
+    if not ADMIN:
+        st.error("내용증명 작성은 관리자 전용입니다."); return
+    if not os.path.isdir(DATA):
+        st.error("자료를 불러올 수 없습니다."); return
+    miss = [f for f in ("stamp_guro.png", "stamp_hwaseong.png", "인감_보정_투명.png")
+            if not os.path.exists(os.path.join(_REPO_DIR, f))]
+    if miss:
+        st.warning("명판/인감 파일이 자료 저장소(chjk-data)에 없습니다: " + ", ".join(miss)
+                   + "  · PDF/명판이 비정상일 수 있습니다.")
+    lt = _longoverdue_list()
+    if not lt:
+        st.info("현재 장기미수 거래처가 없습니다."); return
+    book = nyung.load_book(_REPO_DIR)
+    qbiz = st.session_state.get("_routed_biz") or st.query_params.get("biz", "")
+    labels = [f"[{o['reg']}] {o['name']} · {o['amt']:,}원" for o in lt]
+    idx = next((i for i, o in enumerate(lt) if o["biz"] == qbiz), 0)
+    # 팝업에서 새 거래처가 넘어오면 셀렉트박스를 그 거래처로 강제(이후엔 사용자 선택 유지)
+    if qbiz and st.session_state.get("_ny_applied") != qbiz:
+        st.session_state["_ny_applied"] = qbiz
+        st.session_state["ny_sel"] = idx
+    sel = st.selectbox("장기미수 거래처 선택", range(len(lt)), index=idx,
+                       format_func=lambda i: labels[i], key="ny_sel")
+    o = lt[sel]; biz = o["biz"]
+    m = nyung.match_company(book, o["name"], biz) or {}
+    st.caption("자동완성된 내용을 그대로 쓰거나 수정 후 생성하세요. 거래처를 바꾸면 자동으로 다시 채워집니다.")
+    c1, c2 = st.columns([3, 2])
+    corp = c1.text_input("거래처명 (정식 상호)", value=(m.get("name") or o["name"]), key=f"corp_{biz}")
+    amt = c2.number_input("미수액 (원)", value=int(round(o["amt"])), step=1000, format="%d", key=f"amt_{biz}")
+    c3, c4 = st.columns(2)
+    rep = c3.text_input("대표자명 (수신 담당자)", value=m.get("rep", ""), key=f"rep_{biz}")
+    tel = c4.text_input("수신 연락처", value=m.get("tel", ""), key=f"tel_{biz}")
+    addr = st.text_input("수신 주소", value=m.get("addr", ""), key=f"addr_{biz}")
+    reg = st.radio("관할 (명판·발신자·입금계좌가 바뀝니다)", ["서울", "화성"],
+                   index=(0 if o["reg"] == "서울" else 1), horizontal=True, key=f"reg_{biz}")
+    if not m:
+        st.info("이 거래처는 명단에 없어 대표자·연락처·주소가 비어 있습니다. 직접 입력하세요.")
+    st.caption(f"미수액 미리보기: {int(amt):,}원 · 하단 날짜는 다운로드 당일이 자동 입력됩니다.")
+    if st.button("📄 내용증명 생성 (워드 + PDF)", type="primary"):
+        if not corp.strip():
+            st.error("거래처명을 입력하세요.")
+        else:
+            data = dict(거래처명=corp.strip(), 담당자=rep.strip(), 수신전화=tel.strip(),
+                        수신주소=addr.strip(), 미수액=int(amt), 관할=reg)
+            workdir = tempfile.mkdtemp(prefix="nyung_")
+            safe = re.sub(r"[^가-힣A-Za-z0-9]", "_", corp.strip()) or "내용증명"
+            docx_path = os.path.join(workdir, f"내용증명_{safe}.docx")
+            try:
+                nyung.make_docx(data, _REPO_DIR, docx_path)
+                wb = open(docx_path, "rb").read()
+                pdf = _docx_to_pdf(docx_path, workdir)
+                pb = open(pdf, "rb").read() if pdf else None
+                st.session_state["ny_out"] = {"biz": biz, "word": wb, "pdf": pb, "name": f"내용증명_{safe}"}
+            except Exception as e:
+                st.session_state.pop("ny_out", None)
+                st.error(f"문서 생성 오류: {e}")
+    out = st.session_state.get("ny_out")
+    if out and out.get("biz") == biz:
+        st.success("생성 완료. 아래에서 내려받으세요.")
+        d1, d2 = st.columns(2)
+        d1.download_button("📥 워드(.docx) 받기", out["word"], file_name=out["name"] + ".docx",
+                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_word")
+        if out.get("pdf"):
+            d2.download_button("📥 PDF 받기", out["pdf"], file_name=out["name"] + ".pdf",
+                               mime="application/pdf", key="dl_pdf")
+        else:
+            d2.warning("PDF 변환 실패 — 서버에 libreoffice-writer 가 필요합니다. 워드는 정상입니다.")
+
 # ===== 자료 처리 페이지 =====
 def page_process():
     header(title="자료 처리")
@@ -341,9 +436,23 @@ def page_process():
 
 if not check_pw(): st.stop()
 ADMIN = st.session_state.get("role") == "admin"
-_pg = st.navigation([
+_nyung_page = st.Page(page_nyung, title="내용증명", icon="📄", url_path="nyung")
+_pages = [
     st.Page(page_dashboard, title="미수 현황", icon="📊", default=True),
     st.Page(page_sales, title="매출 현황", icon="📈"),
-    st.Page(page_process, title="자료 처리", icon="🗂"),
-], position="top")
+]
+if ADMIN:
+    _pages.append(_nyung_page)
+_pages.append(st.Page(page_process, title="자료 처리", icon="🗂"))
+_pg = st.navigation(_pages, position="top")
+# 대시보드 팝업에서 ?biz=... 로 넘어오면 내용증명 페이지로 자동 이동(관리자 전용)
+_rb = st.query_params.get("biz")
+if ADMIN and _rb:
+    st.session_state["_routed_biz"] = _rb
+    st.session_state["_ny_applied"] = None   # 새 거래처로 다시 채우도록
+    try:
+        st.query_params.clear()
+    except Exception:
+        pass
+    st.switch_page(_nyung_page)
 _pg.run()
