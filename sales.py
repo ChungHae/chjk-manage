@@ -13,9 +13,18 @@ def _cname(s):
     return re.sub(r"[^가-힣A-Za-z0-9]", "", s).lower()
 
 
-def load_data(data_dir):
+def _pick_path(repo_dir, data_dir, fname):
+    """정적 기준파일은 자료 저장소(chjk-data) 루트에 있으면 그걸 우선 사용(없으면 data.zip 안)."""
+    if repo_dir:
+        p = os.path.join(repo_dir, fname)
+        if os.path.exists(p):
+            return p
+    return os.path.join(data_dir, fname)
+
+
+def load_data(data_dir, repo_dir=None):
     """과거 기준자료(_매출자료.json) 로드. 없으면 None."""
-    p = os.path.join(data_dir, "_매출자료.json")
+    p = _pick_path(repo_dir, data_dir, "_매출자료.json")
     if not os.path.exists(p):
         return None
     with open(p, encoding="utf-8") as fh:
@@ -59,14 +68,20 @@ def _agg_store(store, boundary):
     return month, rank
 
 
+def _rename(s):
+    """상호 변경 규칙(예: 유일에너테크 → 성원에너텍)을 표시명에 반영."""
+    return str(s or "").replace("유일에너테크", "성원에너텍")
+
+
 def _merge_rank(entries_lists):
     """[{업체,매출액}...] 들을 정규화명(cname) 기준으로 합산 → 정렬된 리스트."""
     m = {}
     for lst in entries_lists:
         for z in lst:
-            cn = _cname(z["업체"]) or z["업체"]
+            nm = _rename(z["업체"])
+            cn = _cname(nm) or nm
             if cn in m: m[cn][1] += z["매출액"]
-            else: m[cn] = [z["업체"], z["매출액"]]
+            else: m[cn] = [nm, z["매출액"]]
     return sorted(({"업체": v[0], "매출액": v[1]} for v in m.values()), key=lambda r: -r["매출액"])
 
 
@@ -75,9 +90,10 @@ def _merge_named(lists, field):
     m = {}
     for lst in lists:
         for z in lst:
-            cn = _cname(z["업체"]) or z["업체"]
+            nm = _rename(z["업체"])
+            cn = _cname(nm) or nm
             if cn in m: m[cn][1] += z[field]
-            else: m[cn] = [z["업체"], z[field]]
+            else: m[cn] = [nm, z[field]]
     return sorted(({"업체": v[0], field: v[1]} for v in m.values()), key=lambda r: -r[field])
 
 
@@ -97,9 +113,9 @@ def _disp_buy(name, rep, biz):
     return f"{rep} ({biz})" if rep and rep.lower() != "nan" else str(biz)
 
 
-def build_data(data_dir):
+def build_data(data_dir, repo_dir=None):
     """과거자료 + 누적분을 합친 매출 현황 데이터(years/summary/rank)."""
-    base = load_data(data_dir)
+    base = load_data(data_dir, repo_dir)
     if base is None:
         return None
     store = {}

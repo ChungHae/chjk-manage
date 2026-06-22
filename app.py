@@ -157,6 +157,8 @@ def _dashboard_html(_fp, basis_iso, admin):
     return _dash.render(DATA, datetime.date.fromisoformat(basis_iso), _duerules(), admin=admin)
 
 def page_dashboard():
+    if ADMIN and st.session_state.get("show_nyung"):
+        _render_nyung(); return
     bd = basis_date() or datetime.date.today()
     if not os.path.isdir(DATA):
         header(); st.error("자료를 불러올 수 없습니다."); return
@@ -212,9 +214,13 @@ def _docx_to_pdf(docx_path, out_dir):
             continue
     return None
 
-def page_nyung():
+def _render_nyung():
     import nyung
     header(title="내용증명")
+    if st.button("← 미수 현황으로 돌아가기"):
+        st.session_state["show_nyung"] = False
+        st.session_state.pop("_routed_biz", None)
+        st.rerun()
     if not ADMIN:
         st.error("내용증명 작성은 관리자 전용입니다."); return
     if not os.path.isdir(DATA):
@@ -436,23 +442,19 @@ def page_process():
 
 if not check_pw(): st.stop()
 ADMIN = st.session_state.get("role") == "admin"
-_nyung_page = st.Page(page_nyung, title="내용증명", icon="📄", url_path="nyung")
-_pages = [
-    st.Page(page_dashboard, title="미수 현황", icon="📊", default=True),
-    st.Page(page_sales, title="매출 현황", icon="📈"),
-]
-if ADMIN:
-    _pages.append(_nyung_page)
-_pages.append(st.Page(page_process, title="자료 처리", icon="🗂"))
-_pg = st.navigation(_pages, position="top")
-# 대시보드 팝업에서 ?biz=... 로 넘어오면 내용증명 페이지로 자동 이동(관리자 전용)
+# 대시보드 팝업에서 ?biz=... 로 넘어오면 내용증명 화면을 띄움(별도 탭 없이, 관리자 전용)
 _rb = st.query_params.get("biz")
 if ADMIN and _rb:
     st.session_state["_routed_biz"] = _rb
     st.session_state["_ny_applied"] = None   # 새 거래처로 다시 채우도록
+    st.session_state["show_nyung"] = True
     try:
         st.query_params.clear()
     except Exception:
         pass
-    st.switch_page(_nyung_page)
+_pg = st.navigation([
+    st.Page(page_dashboard, title="미수 현황", icon="📊", default=True),
+    st.Page(page_sales, title="매출 현황", icon="📈"),
+    st.Page(page_process, title="자료 처리", icon="🗂"),
+], position="top")
 _pg.run()

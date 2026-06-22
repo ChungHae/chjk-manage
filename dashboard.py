@@ -5,6 +5,9 @@ import os, glob, re, json, datetime
 from openpyxl import load_workbook
 import engine_core as E
 
+# 상호 변경 규칙: 사업자번호 → 표시 상호 (예: 유일에너테크 → 성원에너텍)
+RENAME = {"124-87-30932": "성원에너텍"}
+
 def _fmt(x):
     if x >= 1e8: return f"{x/1e8:.1f}억"
     if x >= 1e4: return f"{round(x/1e4):,}만"
@@ -16,6 +19,7 @@ def _cust(path, reg, basis, duerules):
     if not m: return None
     bn = m.group(1)
     nm = re.sub(r'^[^)]*\)\s*', '', b).rsplit(' (', 1)[0]
+    nm = RENAME.get(bn, nm)   # 상호 변경 반영(예: 유일에너테크→성원에너텍)
     wb = load_workbook(path); ws = wb.active; C = E.cols(ws)
     supmap = {}; deps = []
     for r in range(3, ws.max_row + 1):
