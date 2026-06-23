@@ -146,7 +146,7 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3,
     numitem("2",f'본 내용증명은 발신인 {K["corp"]} (이하 “발신인”) 가 수신인 {data["거래처명"]} (이하 “수신인”) 에게 납품한 유공압 제품의 미지급 대금에 관한 것입니다.')
     numitem("3",f'발신인은 수신인의 주문에 따라 유공압 제품을 정상적으로 납품하였으며, 이에 대한 납품대금은 부가세를 포함하여 금{amt:,}원({won_hangul(amt)})입니다.')
     numitem("4","양 당사자는 위 납품대금을 약정 지급일까지 지급하기로 약정하였으나, 수신인은 약정 지급기일이 경과한 본 서면 작성일 현재까지도 위 대금을 지급하지 아니하고 있습니다.")
-    numitem("5",f'이에 발신인은 수신인에게 본 서면을 수령한 날로부터 7일 이내에 위 미지급 대금 {amt:,}원 전액을 아래 계좌로 지급하여 주실 것을 정중히 청구합니다.',after=3)
+    numitem("5",f'이에 발신인은 수신인에게 본 서면을 수령한 날로부터 7일 이내에 위 미지급 대금 {amt:,}원 전액을 아래 계좌로 지급하여 주실 것을 정중히 청구합니다.',after=3+spread)
     t2=doc.add_table(rows=2,cols=4); tblb(t2)
     ws2=[Cm(3.2),Cm(5.0),Cm(4.6),Cm(CW.cm-12.8)]
     for i,(h,w) in enumerate(zip(["입금은행","계좌번호","예금주","입금액"],ws2)):
@@ -155,10 +155,10 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3,
     for i,w in enumerate(ws2): dc[i].width=w
     cp(dc[0],K["bank"],align=AL.CENTER); cp(dc[1],K["acct"],align=AL.CENTER); cp(dc[2],K["holder"],align=AL.CENTER); cp(dc[3],f"{amt:,}원",align=AL.CENTER)
     for r in t2.rows: rh(r,0.68)
-    numitem("6","만약 위 기한 내에 대금이 지급되지 아니할 경우, 발신인은 부득이 민사소송 제기, 지급명령 신청 등 법적 절차에 착수할 수 밖에 없으며, 이 경우 지연손해금 및 소송비용 등이 추가로 수신인에게 부담될 수 있음을 미리 알려드립니다.")
+    numitem("6","만약 위 기한 내에 대금이 지급되지 아니할 경우, 발신인은 부득이 민사소송 제기, 지급명령 신청 등 법적 절차에 착수할 수 밖에 없으며, 이 경우 지연손해금 및 소송비용 등이 추가로 수신인에게 부담될 수 있음을 미리 알려드립니다.",before=spread)
     numitem("7","원만한 해결을 진심으로 희망하오니, 기한 내에 성실히 이행하여 주시기 바랍니다.",after=2)
     hrule(para("",before=0,after=2))
-    para(datestr,AL.CENTER,size=10.5,before=date_before,after=14)
+    para(datestr,AL.CENTER,size=10.5,before=date_before+spread,after=14)
     para(K["holder"],AL.CENTER,size=11.5,bold=True,after=6+spread)
     stt=doc.add_table(rows=1,cols=3); stt.autofit=False; stt.allow_autofit=False
     set_fixed(stt,[CW.cm-8.7, 6.7, 2.0])
