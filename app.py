@@ -270,6 +270,11 @@ def _pdf_pages(path):
     except Exception:
         return 1
 
+def _reformat_amt(_k):
+    """미수액 입력값을 천단위 콤마로 자동 정리(on_change 콜백 — 위젯 키 수정 허용 구간)."""
+    d = re.sub(r"[^0-9]", "", str(st.session_state.get(_k, "")))
+    st.session_state[_k] = f"{int(d):,}" if d else ""
+
 def _make_pdf_fit(data, pdf_src, workdir):
     """PDF는 노토 폰트로 생성. 항목간격을 키워 하단까지 채우되, 페이지수를 보며 1페이지를 유지하도록 자동 조절.
     서버 렌더링이 sandbox보다 촘촘해도 알아서 더 채운다. 성공값은 세션에 캐시해 다음부터 빠르게."""
@@ -327,12 +332,9 @@ def page_nyung():
     _amk = f"amt_{biz}"
     if _amk not in st.session_state:
         st.session_state[_amk] = f"{int(round(o['amt'])):,}"
-    amt_raw = c2.text_input("미수액 (원)", key=_amk, help="천 단위 쉼표가 자동으로 표시됩니다.")
+    amt_raw = c2.text_input("미수액 (원)", key=_amk, on_change=_reformat_amt, args=(_amk,),
+                            help="천 단위 쉼표가 자동으로 표시됩니다.")
     amt = int(re.sub(r"[^0-9]", "", amt_raw or "") or 0)
-    _amf = f"{amt:,}" if (amt_raw or "").strip() else ""   # 수정 시에도 콤마 자동 표시
-    if _amf != (amt_raw or ""):
-        st.session_state[_amk] = _amf
-        st.rerun()
     c3, c4 = st.columns(2)
     rep = c3.text_input("대표자명 (수신 담당자)", value=m.get("rep", ""), key=f"rep_{biz}")
     tel = c4.text_input("수신 연락처", value=m.get("tel", ""), key=f"tel_{biz}")
