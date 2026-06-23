@@ -161,7 +161,11 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3)
     para(datestr,AL.CENTER,size=10.5,before=date_before,after=14)
     para(K["holder"],AL.CENTER,size=11.5,bold=True,after=6)
     stt=doc.add_table(rows=1,cols=3); stt.autofit=False; stt.allow_autofit=False
-    set_fixed(stt,[CW.cm-8.4, 6.4, 2.0])
+    set_fixed(stt,[CW.cm-8.7, 6.7, 2.0])
+    _cm=OxmlElement('w:tblCellMar')        # 칸 좌우 여백 0 → 명판 그림이 잘리지 않게
+    for _sd in ('top','left','bottom','right'):
+        _e=OxmlElement('w:'+_sd); _e.set(qn('w:w'),'0'); _e.set(qn('w:type'),'dxa'); _cm.append(_e)
+    stt._tbl.tblPr.append(_cm)
     sp=stt.cell(0,0); mc=stt.cell(0,1); sc=stt.cell(0,2)
     mc.vertical_alignment=VAL.CENTER; sc.vertical_alignment=VAL.CENTER
     mpp=mc.paragraphs[0]; mpp.alignment=AL.CENTER; mpp.add_run().add_picture(os.path.join(repo_dir,KWON[reg]["stamp"]), width=Cm(6.0))

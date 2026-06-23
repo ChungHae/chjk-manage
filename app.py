@@ -275,11 +275,11 @@ def _make_pdf_fit(data, pdf_src, workdir):
     서버 렌더링이 sandbox보다 촘촘해도 알아서 더 채운다. 성공값은 세션에 캐시해 다음부터 빠르게."""
     import nyung
     cached = st.session_state.get("_pdf_ia")
-    cands = ([cached] if cached else []) + [12, 9, 7, 5]
+    cands = ([cached] if cached else []) + [10, 7, 5, 4]
     seen = set(); order = [c for c in cands if not (c in seen or seen.add(c))]
     last = None
     for ia in order:
-        nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=16, item_after=ia)
+        nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=24, item_after=ia)
         cand = _docx_to_pdf(pdf_src, workdir)
         if not cand:
             return None
