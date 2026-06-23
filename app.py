@@ -274,18 +274,19 @@ def _make_pdf_fit(data, pdf_src, workdir):
     """PDF는 노토 폰트로 생성. 항목간격을 키워 하단까지 채우되, 페이지수를 보며 1페이지를 유지하도록 자동 조절.
     서버 렌더링이 sandbox보다 촘촘해도 알아서 더 채운다. 성공값은 세션에 캐시해 다음부터 빠르게."""
     import nyung
-    cached = st.session_state.get("_pdf_ia")
-    cands = ([cached] if cached else []) + [10, 7, 5, 4]
+    cached = st.session_state.get("_pdf_sp")
+    cands = ([cached] if cached else []) + [16, 13, 11, 9, 7]
     seen = set(); order = [c for c in cands if not (c in seen or seen.add(c))]
     last = None
-    for ia in order:
-        nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=24, item_after=ia)
+    for sp in order:
+        # 구간 사이(수신자↔발신자, 발신자↔촉구의 건, 회사명↔명판) 간격을 sp 만큼 띄워 고르게 채움
+        nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=6, item_after=3, spread=sp)
         cand = _docx_to_pdf(pdf_src, workdir)
         if not cand:
             return None
         last = cand
         if _pdf_pages(cand) == 1:
-            st.session_state["_pdf_ia"] = ia
+            st.session_state["_pdf_sp"] = sp
             return cand
     return last
 

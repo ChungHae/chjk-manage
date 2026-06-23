@@ -68,7 +68,7 @@ def match_company(book, name, biz):
         if _norm_name(o["name"])==dn: return o
     return max(c, key=lambda o:difflib.SequenceMatcher(None,dn,_norm_name(o["name"])).ratio())
 
-def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3):
+def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3, spread=0):
     FF=font or F
     reg=data["관할"]; K=KWON[reg]; amt=int(round(data["미수액"]))
     dt=data.get("날짜") or datetime.date.today()
@@ -139,9 +139,9 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3)
     para("내  용  증  명  서",AL.CENTER,size=22,bold=True,before=2,after=8)
     para("수신자",size=10.5,bold=True,before=2,after=2)
     info_table([("성  명",data["담당자"],"전화번호",data["수신전화"]),("주  소",data["수신주소"])])
-    para("발신자",size=10.5,bold=True,before=5,after=2)
+    para("발신자",size=10.5,bold=True,before=5+spread,after=2)
     info_table([("성  명",SENDER_NAME,"전화번호",K["tel"]),("주  소",K["addr"])])
-    hrule(para("미수금 지불 촉구의 건",size=10.5,bold=True,before=7,after=4))
+    hrule(para("미수금 지불 촉구의 건",size=10.5,bold=True,before=7+spread,after=4))
     numitem("1","귀하(社)의 무궁한 발전을 기원합니다.",before=11)
     numitem("2",f'본 내용증명은 발신인 {K["corp"]} (이하 “발신인”) 가 수신인 {data["거래처명"]} (이하 “수신인”) 에게 납품한 유공압 제품의 미지급 대금에 관한 것입니다.')
     numitem("3",f'발신인은 수신인의 주문에 따라 유공압 제품을 정상적으로 납품하였으며, 이에 대한 납품대금은 부가세를 포함하여 금{amt:,}원({won_hangul(amt)})입니다.')
@@ -159,7 +159,7 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3)
     numitem("7","원만한 해결을 진심으로 희망하오니, 기한 내에 성실히 이행하여 주시기 바랍니다.",after=2)
     hrule(para("",before=0,after=2))
     para(datestr,AL.CENTER,size=10.5,before=date_before,after=14)
-    para(K["holder"],AL.CENTER,size=11.5,bold=True,after=6)
+    para(K["holder"],AL.CENTER,size=11.5,bold=True,after=6+spread)
     stt=doc.add_table(rows=1,cols=3); stt.autofit=False; stt.allow_autofit=False
     set_fixed(stt,[CW.cm-8.7, 6.7, 2.0])
     _cm=OxmlElement('w:tblCellMar')        # 칸 좌우 여백 0 → 명판 그림이 잘리지 않게
