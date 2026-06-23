@@ -157,7 +157,7 @@ def make_docx(data, repo_dir, out_docx):
     numitem("6","만약 위 기한 내에 대금이 지급되지 아니할 경우, 발신인은 부득이 민사소송 제기, 지급명령 신청 등 법적 절차에 착수할 수 밖에 없으며, 이 경우 지연손해금 및 소송비용 등이 추가로 수신인에게 부담될 수 있음을 미리 알려드립니다.")
     numitem("7","원만한 해결을 진심으로 희망하오니, 기한 내에 성실히 이행하여 주시기 바랍니다.",after=2)
     hrule(para("",before=0,after=2))
-    para(datestr,AL.CENTER,size=10.5,before=12,after=14)
+    para(datestr,AL.CENTER,size=10.5,before=26,after=14)
     para(K["holder"],AL.CENTER,size=11.5,bold=True,after=6)
     stt=doc.add_table(rows=1,cols=3); stt.autofit=False; stt.allow_autofit=False
     set_fixed(stt,[CW.cm-8.4, 6.4, 2.0])

@@ -170,8 +170,6 @@ def _data_fp():
             len(glob.glob(os.path.join(DATA, "*", "*.xlsx"))))
 
 def page_dashboard():
-    if ADMIN and st.session_state.get("show_nyung"):
-        _render_nyung(); return
     bd = basis_date() or datetime.date.today()
     if not os.path.isdir(DATA):
         header(); st.error("자료를 불러올 수 없습니다."); return
@@ -180,14 +178,12 @@ def page_dashboard():
         _components.html(_dashboard_html(_fp, bd.isoformat(), ADMIN), height=760, scrolling=True)
         if ADMIN:
             # 팝업의 '내용증명 작성' 버튼이 같은 출처(same-origin)로 클릭할 숨은 트리거(거래처별). 화면 밖에 배치.
-            st.markdown("<style>.st-key-nytrig{position:fixed!important;left:-9999px!important;top:0!important;width:1px;height:1px;overflow:hidden;}</style>", unsafe_allow_html=True)
             with st.container(key="nytrig"):
                 for _o in _longoverdue_cached(_fp):
                     if st.button("NYO_" + _o["biz"], key="nyo_" + _o["biz"]):
                         st.session_state["_routed_biz"] = _o["biz"]
                         st.session_state["_ny_applied"] = None
-                        st.session_state["show_nyung"] = True
-                        st.rerun()
+                        st.switch_page(_nyung_page)
     except Exception as e:
         header(); st.error(f"대시보드 생성 오류: {e}")
 
@@ -262,15 +258,13 @@ def _docx_to_pdf(docx_path, out_dir):
             continue
     return None
 
-def _render_nyung():
+def page_nyung():
     import nyung
     header(title="내용증명")
-    if st.button("← 미수 현황으로 돌아가기"):
-        st.session_state["show_nyung"] = False
-        st.session_state.pop("_routed_biz", None)
-        st.rerun()
     if not ADMIN:
         st.error("내용증명 작성은 관리자 전용입니다."); return
+    if st.button("← 미수 현황으로 돌아가기"):
+        st.switch_page(_dashboard_page)
     if not os.path.isdir(DATA):
         st.error("자료를 불러올 수 없습니다."); return
     miss = [f for f in ("stamp_guro.png", "stamp_hwaseong.png", "인감_보정_투명.png")
@@ -298,7 +292,9 @@ def _render_nyung():
     st.caption("자동완성된 내용을 그대로 쓰거나 수정 후 생성하세요. 거래처를 바꾸면 자동으로 다시 채워집니다.")
     c1, c2 = st.columns([3, 2])
     corp = c1.text_input("거래처명 (정식 상호)", value=(m.get("name") or o["name"]), key=f"corp_{biz}")
-    amt = c2.number_input("미수액 (원)", value=int(round(o["amt"])), step=1000, format="%d", key=f"amt_{biz}")
+    amt_raw = c2.text_input("미수액 (원)", value=f"{int(round(o['amt'])):,}", key=f"amt_{biz}",
+                            help="천 단위 쉼표는 자동으로 처리됩니다.")
+    amt = int(re.sub(r"[^0-9]", "", amt_raw or "") or 0)
     c3, c4 = st.columns(2)
     rep = c3.text_input("대표자명 (수신 담당자)", value=m.get("rep", ""), key=f"rep_{biz}")
     tel = c4.text_input("수신 연락처", value=m.get("tel", ""), key=f"tel_{biz}")
@@ -307,13 +303,13 @@ def _render_nyung():
                    index=(0 if o["reg"] == "서울" else 1), horizontal=True, key=f"reg_{biz}")
     if not m:
         st.info("이 거래처는 명단에 없어 대표자·연락처·주소가 비어 있습니다. 직접 입력하세요.")
-    st.caption(f"미수액 미리보기: {int(amt):,}원 · 하단 날짜는 다운로드 당일이 자동 입력됩니다.")
+    st.caption(f"미수액 미리보기: {amt:,}원 · 하단 날짜는 다운로드 당일이 자동 입력됩니다.")
     if st.button("📄 내용증명 생성 (워드 + PDF)", type="primary"):
         if not corp.strip():
             st.error("거래처명을 입력하세요.")
         else:
             data = dict(거래처명=corp.strip(), 담당자=rep.strip(), 수신전화=tel.strip(),
-                        수신주소=addr.strip(), 미수액=int(amt), 관할=reg)
+                        수신주소=addr.strip(), 미수액=amt, 관할=reg)
             workdir = tempfile.mkdtemp(prefix="nyung_")
             safe = re.sub(r"[^가-힣A-Za-z0-9]", "_", corp.strip()) or "내용증명"
             docx_path = os.path.join(workdir, f"내용증명_{safe}.docx")
@@ -492,10 +488,14 @@ def page_process():
 
 if not check_pw(): st.stop()
 ADMIN = st.session_state.get("role") == "admin"
-# 내용증명 화면은 미수현황 팝업의 '내용증명 작성' 버튼(숨은 트리거 클릭)으로만 열린다. 별도 탭 없음.
-_pg = st.navigation([
-    st.Page(page_dashboard, title="미수 현황", icon="📊", default=True),
-    st.Page(page_sales, title="매출 현황", icon="📈"),
-    st.Page(page_process, title="자료 처리", icon="🗂"),
-], position="top")
+# 페이지 객체(전역) — 팝업 트리거와 '돌아가기'에서 st.switch_page 로 이동. 미수현황 탭은 항상 홈으로 복귀.
+_dashboard_page = st.Page(page_dashboard, title="미수 현황", icon="📊", default=True)
+_sales_page = st.Page(page_sales, title="매출 현황", icon="📈")
+_process_page = st.Page(page_process, title="자료 처리", icon="🗂")
+_nyung_page = st.Page(page_nyung, title="내용증명", icon="📄")
+_pages = [_dashboard_page, _sales_page]
+if ADMIN:
+    _pages.append(_nyung_page)
+_pages.append(_process_page)
+_pg = st.navigation(_pages, position="top")
 _pg.run()
