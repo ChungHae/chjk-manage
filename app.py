@@ -263,6 +263,32 @@ def _docx_to_pdf(docx_path, out_dir):
             continue
     return None
 
+def _pdf_pages(path):
+    try:
+        from pypdf import PdfReader
+        return len(PdfReader(path).pages)
+    except Exception:
+        return 1
+
+def _make_pdf_fit(data, pdf_src, workdir):
+    """PDF는 노토 폰트로 생성. 항목간격을 키워 하단까지 채우되, 페이지수를 보며 1페이지를 유지하도록 자동 조절.
+    서버 렌더링이 sandbox보다 촘촘해도 알아서 더 채운다. 성공값은 세션에 캐시해 다음부터 빠르게."""
+    import nyung
+    cached = st.session_state.get("_pdf_ia")
+    cands = ([cached] if cached else []) + [12, 9, 7, 5]
+    seen = set(); order = [c for c in cands if not (c in seen or seen.add(c))]
+    last = None
+    for ia in order:
+        nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=16, item_after=ia)
+        cand = _docx_to_pdf(pdf_src, workdir)
+        if not cand:
+            return None
+        last = cand
+        if _pdf_pages(cand) == 1:
+            st.session_state["_pdf_ia"] = ia
+            return cand
+    return last
+
 def page_nyung():
     import nyung
     header(title="내용증명")
@@ -319,12 +345,12 @@ def page_nyung():
             safe = re.sub(r"[^가-힣A-Za-z0-9]", "_", corp.strip()) or "내용증명"
             docx_path = os.path.join(workdir, f"내용증명_{safe}.docx")
             try:
-                nyung.make_docx(data, _REPO_DIR, docx_path)  # 워드: 맑은 고딕(사용자 PC)
-                wb = open(docx_path, "rb").read()
-                pdf_src = os.path.join(workdir, "pdf_src.docx")  # PDF: 서버 폰트(노토) 직접 지정 + 하단까지 채움
-                nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=28)
-                pdf = _docx_to_pdf(pdf_src, workdir)
-                pb = open(pdf, "rb").read() if pdf else None
+                with st.spinner("내용증명 생성 중… (PDF 하단 채움 최적화로 몇 초 더 걸릴 수 있어요)"):
+                    nyung.make_docx(data, _REPO_DIR, docx_path)  # 워드: 맑은 고딕(이전 형식 그대로 유지)
+                    wb = open(docx_path, "rb").read()
+                    pdf_src = os.path.join(workdir, "pdf_src.docx")  # PDF: 별도 규칙(노토 + 하단까지 자동 채움)
+                    pdf = _make_pdf_fit(data, pdf_src, workdir)
+                    pb = open(pdf, "rb").read() if pdf else None
                 st.session_state["ny_out"] = {"biz": biz, "word": wb, "pdf": pb, "name": f"내용증명_{safe}"}
             except Exception as e:
                 st.session_state.pop("ny_out", None)

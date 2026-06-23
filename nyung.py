@@ -68,7 +68,7 @@ def match_company(book, name, biz):
         if _norm_name(o["name"])==dn: return o
     return max(c, key=lambda o:difflib.SequenceMatcher(None,dn,_norm_name(o["name"])).ratio())
 
-def make_docx(data, repo_dir, out_docx, font=None, date_before=16):
+def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3):
     FF=font or F
     reg=data["관할"]; K=KWON[reg]; amt=int(round(data["미수액"]))
     dt=data.get("날짜") or datetime.date.today()
@@ -91,9 +91,9 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=16):
         pf=p.paragraph_format; pf.space_before=Pt(before); pf.space_after=Pt(after); pf.line_spacing=LS
         if text!="": kr(p.add_run(text),size,bold)
         return p
-    def numitem(num, text, after=5, before=0):
+    def numitem(num, text, after=None, before=0):
         p=doc.add_paragraph(); pf=p.paragraph_format
-        pf.space_after=Pt(after); pf.space_before=Pt(before); pf.line_spacing=LS
+        pf.space_after=Pt(item_after if after is None else after); pf.space_before=Pt(before); pf.line_spacing=LS
         kr(p.add_run(num+". "),BASE); kr(p.add_run(text),BASE); return p
     def shade(cell,fill=SHADE):
         tcPr=cell._tc.get_or_add_tcPr(); shd=OxmlElement('w:shd'); shd.set(qn('w:val'),'clear'); shd.set(qn('w:fill'),fill); tcPr.append(shd)
