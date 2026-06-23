@@ -319,9 +319,11 @@ def page_nyung():
             safe = re.sub(r"[^가-힣A-Za-z0-9]", "_", corp.strip()) or "내용증명"
             docx_path = os.path.join(workdir, f"내용증명_{safe}.docx")
             try:
-                nyung.make_docx(data, _REPO_DIR, docx_path)
+                nyung.make_docx(data, _REPO_DIR, docx_path)  # 워드: 맑은 고딕(사용자 PC)
                 wb = open(docx_path, "rb").read()
-                pdf = _docx_to_pdf(docx_path, workdir)
+                pdf_src = os.path.join(workdir, "pdf_src.docx")  # PDF: 서버 폰트(노토) 직접 지정 + 하단까지 채움
+                nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=28)
+                pdf = _docx_to_pdf(pdf_src, workdir)
                 pb = open(pdf, "rb").read() if pdf else None
                 st.session_state["ny_out"] = {"biz": biz, "word": wb, "pdf": pb, "name": f"내용증명_{safe}"}
             except Exception as e:

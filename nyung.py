@@ -68,7 +68,8 @@ def match_company(book, name, biz):
         if _norm_name(o["name"])==dn: return o
     return max(c, key=lambda o:difflib.SequenceMatcher(None,dn,_norm_name(o["name"])).ratio())
 
-def make_docx(data, repo_dir, out_docx):
+def make_docx(data, repo_dir, out_docx, font=None, date_before=16):
+    FF=font or F
     reg=data["관할"]; K=KWON[reg]; amt=int(round(data["미수액"]))
     dt=data.get("날짜") or datetime.date.today()
     if isinstance(dt,str):
@@ -76,14 +77,14 @@ def make_docx(data, repo_dir, out_docx):
         except Exception: dt=datetime.date.today()
     datestr=f"{dt.year}년 {dt.month}월 {dt.day}일"
     doc=Document()
-    st=doc.styles['Normal']; st.font.name=F; st.font.size=Pt(BASE); st.element.rPr.rFonts.set(qn('w:eastAsia'),F)
+    st=doc.styles['Normal']; st.font.name=FF; st.font.size=Pt(BASE); st.element.rPr.rFonts.set(qn('w:eastAsia'),FF)
     pf0=st.paragraph_format; pf0.line_spacing=LS
     sec=doc.sections[0]; sec.page_width=Cm(21); sec.page_height=Cm(29.7)
     sec.top_margin=Cm(1.1); sec.bottom_margin=Cm(0.9); sec.left_margin=Cm(2.0); sec.right_margin=Cm(2.0)
     CW=Cm(21-4.0)
     def kr(run,size=BASE,bold=False):
-        run.font.name=F; run.font.size=Pt(size); run.font.bold=bold
-        run._element.rPr.rFonts.set(qn('w:eastAsia'),F); return run
+        run.font.name=FF; run.font.size=Pt(size); run.font.bold=bold
+        run._element.rPr.rFonts.set(qn('w:eastAsia'),FF); return run
     def para(text="",align=None,size=BASE,bold=False,before=0,after=3):
         p=doc.add_paragraph()
         if align is not None: p.alignment=align
@@ -157,7 +158,7 @@ def make_docx(data, repo_dir, out_docx):
     numitem("6","만약 위 기한 내에 대금이 지급되지 아니할 경우, 발신인은 부득이 민사소송 제기, 지급명령 신청 등 법적 절차에 착수할 수 밖에 없으며, 이 경우 지연손해금 및 소송비용 등이 추가로 수신인에게 부담될 수 있음을 미리 알려드립니다.")
     numitem("7","원만한 해결을 진심으로 희망하오니, 기한 내에 성실히 이행하여 주시기 바랍니다.",after=2)
     hrule(para("",before=0,after=2))
-    para(datestr,AL.CENTER,size=10.5,before=16,after=14)
+    para(datestr,AL.CENTER,size=10.5,before=date_before,after=14)
     para(K["holder"],AL.CENTER,size=11.5,bold=True,after=6)
     stt=doc.add_table(rows=1,cols=3); stt.autofit=False; stt.allow_autofit=False
     set_fixed(stt,[CW.cm-8.4, 6.4, 2.0])
