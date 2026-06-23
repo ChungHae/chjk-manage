@@ -44,16 +44,21 @@ def header(full=True, title=None):
 def check_pw():
     if st.session_state.get("auth"): return True
     st.markdown("<style>[data-testid='stSidebar'],[data-testid='stSidebarCollapsedControl'],[data-testid='stSidebarCollapseButton']{display:none!important;}</style>", unsafe_allow_html=True)
-    header(full=False)
     pw_admin = st.secrets.get("password_admin", st.secrets.get("password", os.environ.get("APP_PW", "chunghae")))
     pw_view = st.secrets.get("password_view", os.environ.get("APP_PW_VIEW", ""))
-    with st.form("login_form"):
-        x = st.text_input("비밀번호", type="password")
-        submitted = st.form_submit_button("로그인")
+    box = st.empty()
+    with box.container():
+        header(full=False)
+        with st.form("login_form"):
+            x = st.text_input("비밀번호", type="password")
+            submitted = st.form_submit_button("로그인")
     if submitted:
-        if x == pw_admin: st.session_state.update(auth=True, role="admin"); st.rerun()
-        elif pw_view and x == pw_view: st.session_state.update(auth=True, role="view"); st.rerun()
-        else: st.error("비밀번호가 틀립니다.")
+        if x == pw_admin or (pw_view and x == pw_view):
+            box.empty()   # 로그인 화면을 즉시 제거 → 다음 화면 로딩 중 잔상(흐린 비밀번호칸) 방지
+            st.session_state.update(auth=True, role=("admin" if x == pw_admin else "view"))
+            st.rerun()
+        else:
+            st.error("비밀번호가 틀립니다.")
     return False
 
 def zip_bytes(d, dirs_only=None):
