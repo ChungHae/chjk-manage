@@ -93,7 +93,22 @@ tr.main{cursor:pointer} tr.main:hover{background:#f7f9fc}
 const DATA=@@DATA@@;
 const ADMIN=@@ADMIN@@;
 let FILTER='unpaid';let REGION='all';
-function gotoNyung(biz){try{window.top.location.search='?biz='+encodeURIComponent(biz);}catch(e){window.location.search='?biz='+encodeURIComponent(biz);}}
+function gotoNyung(biz){
+ // 같은 출처(same-origin)이므로 상단 창의 '숨은 네이티브 버튼'을 직접 클릭 → Streamlit 재실행(세션 유지, 새로고침 없음).
+ var docs=[];
+ try{ if(window.top && window.top.document) docs.push(window.top.document); }catch(e){}
+ try{ if(window.parent && window.parent.document && docs.indexOf(window.parent.document)<0) docs.push(window.parent.document); }catch(e){}
+ for(var d=0; d<docs.length; d++){
+  try{
+   var btns=docs[d].querySelectorAll('.st-key-nytrig button');
+   for(var i=0;i<btns.length;i++){
+    if((btns[i].innerText||btns[i].textContent||'').trim()==='NYO_'+biz){ btns[i].click(); return true; }
+   }
+  }catch(e){}
+ }
+ alert('내용증명 화면을 여는 데 실패했습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+ return false;
+}
 function won(x){return (x||0).toLocaleString('ko-KR')}
 function eok(x){return (x/1e8).toFixed(1)+'억'}
 function regCount(){const f={all:0,unpaid:0,미수:0,장기미수:0,진행:0,완납:0};let amt=0;

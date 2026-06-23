@@ -156,6 +156,14 @@ def _dashboard_html(_fp, basis_iso, admin):
     import dashboard as _dash
     return _dash.render(DATA, datetime.date.fromisoformat(basis_iso), _duerules(), admin=admin)
 
+@st.cache_data(show_spinner=False)
+def _longoverdue_cached(_fp):
+    return _longoverdue_list()
+
+def _data_fp():
+    return (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,
+            len(glob.glob(os.path.join(DATA, "*", "*.xlsx"))))
+
 def page_dashboard():
     if ADMIN and st.session_state.get("show_nyung"):
         _render_nyung(); return
@@ -163,9 +171,18 @@ def page_dashboard():
     if not os.path.isdir(DATA):
         header(); st.error("자료를 불러올 수 없습니다."); return
     try:
-        _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,
-               len(glob.glob(os.path.join(DATA, "*", "*.xlsx"))))
+        _fp = _data_fp()
         _components.html(_dashboard_html(_fp, bd.isoformat(), ADMIN), height=760, scrolling=True)
+        if ADMIN:
+            # 팝업의 '내용증명 작성' 버튼이 같은 출처(same-origin)로 클릭할 숨은 트리거(거래처별). 화면 밖에 배치.
+            st.markdown("<style>.st-key-nytrig{position:fixed!important;left:-9999px!important;top:0!important;width:1px;height:1px;overflow:hidden;}</style>", unsafe_allow_html=True)
+            with st.container(key="nytrig"):
+                for _o in _longoverdue_cached(_fp):
+                    if st.button("NYO_" + _o["biz"], key="nyo_" + _o["biz"]):
+                        st.session_state["_routed_biz"] = _o["biz"]
+                        st.session_state["_ny_applied"] = None
+                        st.session_state["show_nyung"] = True
+                        st.rerun()
     except Exception as e:
         header(); st.error(f"대시보드 생성 오류: {e}")
 
@@ -442,16 +459,7 @@ def page_process():
 
 if not check_pw(): st.stop()
 ADMIN = st.session_state.get("role") == "admin"
-# 대시보드 팝업에서 ?biz=... 로 넘어오면 내용증명 화면을 띄움(별도 탭 없이, 관리자 전용)
-_rb = st.query_params.get("biz")
-if ADMIN and _rb:
-    st.session_state["_routed_biz"] = _rb
-    st.session_state["_ny_applied"] = None   # 새 거래처로 다시 채우도록
-    st.session_state["show_nyung"] = True
-    try:
-        st.query_params.clear()
-    except Exception:
-        pass
+# 내용증명 화면은 미수현황 팝업의 '내용증명 작성' 버튼(숨은 트리거 클릭)으로만 열린다. 별도 탭 없음.
 _pg = st.navigation([
     st.Page(page_dashboard, title="미수 현황", icon="📊", default=True),
     st.Page(page_sales, title="매출 현황", icon="📈"),
