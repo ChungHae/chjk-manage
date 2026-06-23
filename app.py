@@ -8,7 +8,7 @@ import pipeline, store
 st.set_page_config(page_title="충해전기 관리시스템", page_icon="📒", layout="wide")
 import streamlit.components.v1 as _components
 _components.html("<script>window.parent.document.title='충해전기 관리시스템';</script>", height=0)
-st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1320px;margin:0 auto;padding-top:1.4rem;padding-left:3rem;padding-right:3rem;}@media(max-width:640px){.block-container{padding-left:0.7rem!important;padding-right:0.7rem!important;}}</style><style>iframe[height='0']{display:none;}</style>", unsafe_allow_html=True)
+st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1320px;margin:0 auto;padding-top:1.4rem;padding-left:3rem;padding-right:3rem;}@media(max-width:640px){.block-container{padding-left:0.7rem!important;padding-right:0.7rem!important;}}</style><style>iframe[height='0']{display:none;}.st-key-nytrig{position:fixed!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;overflow:hidden!important;}</style>", unsafe_allow_html=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOGO = "https://chjk.co.kr/web/upload/category/logo/v2_c8bcd54017bc5f8880bb32d3de5333e6_BWrlZyel0_top.jpg"
 NAVY = "#1B3A6B"
@@ -160,6 +160,11 @@ def _dashboard_html(_fp, basis_iso, admin):
 def _longoverdue_cached(_fp):
     return _longoverdue_list()
 
+@st.cache_resource(show_spinner=False)
+def _nyung_book(_fp):
+    import nyung
+    return nyung.load_book(_REPO_DIR)
+
 def _data_fp():
     return (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,
             len(glob.glob(os.path.join(DATA, "*", "*.xlsx"))))
@@ -216,14 +221,40 @@ def _longoverdue_list():
     lt.sort(key=lambda o: (o["reg"], -o["amt"]))
     return lt
 
+def _fontconfig_file():
+    """맑은 고딕/Malgun Gothic → Noto Sans CJK KR 로 강제 매핑(서버 PDF가 워드와 동일하게 보이도록)."""
+    conf = os.path.join(tempfile.gettempdir(), "chjk_fonts.conf")
+    try:
+        if not os.path.exists(conf):
+            with open(conf, "w", encoding="utf-8") as f:
+                f.write('<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n'
+                        '  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>\n'
+                        '  <match target="pattern"><test name="family"><string>맑은 고딕</string></test>'
+                        '<edit name="family" mode="assign" binding="strong"><string>Noto Sans CJK KR</string></edit></match>\n'
+                        '  <match target="pattern"><test name="family"><string>Malgun Gothic</string></test>'
+                        '<edit name="family" mode="assign" binding="strong"><string>Noto Sans CJK KR</string></edit></match>\n'
+                        '</fontconfig>\n')
+        return conf
+    except Exception:
+        return None
+
 def _docx_to_pdf(docx_path, out_dir):
-    """LibreOffice headless 로 docx→pdf. 실패 시 None."""
+    """LibreOffice headless 로 docx→pdf. 폰트 별칭(맑은고딕→Noto)으로 워드와 동일하게 렌더. 실패 시 None."""
     import subprocess
     base = os.path.splitext(os.path.basename(docx_path))[0]
+    env = dict(os.environ)
+    conf = _fontconfig_file()
+    if conf:
+        env["FONTCONFIG_FILE"] = conf
+    lohome = os.path.join(tempfile.gettempdir(), "lohome")
+    try:
+        os.makedirs(lohome, exist_ok=True); env.setdefault("HOME", lohome)
+    except Exception:
+        pass
     for soffice in ("libreoffice", "soffice"):
         try:
             subprocess.run([soffice, "--headless", "--convert-to", "pdf", "--outdir", out_dir, docx_path],
-                           check=True, timeout=120, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                           check=True, timeout=120, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
             pdf = os.path.join(out_dir, base + ".pdf")
             if os.path.exists(pdf):
                 return pdf
@@ -247,10 +278,12 @@ def _render_nyung():
     if miss:
         st.warning("명판/인감 파일이 자료 저장소(chjk-data)에 없습니다: " + ", ".join(miss)
                    + "  · PDF/명판이 비정상일 수 있습니다.")
-    lt = _longoverdue_list()
+    with st.spinner("불러오는 중…"):
+        _fp = _data_fp()
+        lt = _longoverdue_cached(_fp)
+        book = _nyung_book(_fp)
     if not lt:
         st.info("현재 장기미수 거래처가 없습니다."); return
-    book = nyung.load_book(_REPO_DIR)
     qbiz = st.session_state.get("_routed_biz") or st.query_params.get("biz", "")
     labels = [f"[{o['reg']}] {o['name']} · {o['amt']:,}원" for o in lt]
     idx = next((i for i, o in enumerate(lt) if o["biz"] == qbiz), 0)
