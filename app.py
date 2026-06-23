@@ -324,9 +324,15 @@ def page_nyung():
     st.caption("자동완성된 내용을 그대로 쓰거나 수정 후 생성하세요. 거래처를 바꾸면 자동으로 다시 채워집니다.")
     c1, c2 = st.columns([3, 2])
     corp = c1.text_input("거래처명 (정식 상호)", value=(m.get("name") or o["name"]), key=f"corp_{biz}")
-    amt_raw = c2.text_input("미수액 (원)", value=f"{int(round(o['amt'])):,}", key=f"amt_{biz}",
-                            help="천 단위 쉼표는 자동으로 처리됩니다.")
+    _amk = f"amt_{biz}"
+    if _amk not in st.session_state:
+        st.session_state[_amk] = f"{int(round(o['amt'])):,}"
+    amt_raw = c2.text_input("미수액 (원)", key=_amk, help="천 단위 쉼표가 자동으로 표시됩니다.")
     amt = int(re.sub(r"[^0-9]", "", amt_raw or "") or 0)
+    _amf = f"{amt:,}" if (amt_raw or "").strip() else ""   # 수정 시에도 콤마 자동 표시
+    if _amf != (amt_raw or ""):
+        st.session_state[_amk] = _amf
+        st.rerun()
     c3, c4 = st.columns(2)
     rep = c3.text_input("대표자명 (수신 담당자)", value=m.get("rep", ""), key=f"rep_{biz}")
     tel = c4.text_input("수신 연락처", value=m.get("tel", ""), key=f"tel_{biz}")
