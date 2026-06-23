@@ -275,12 +275,12 @@ def _make_pdf_fit(data, pdf_src, workdir):
     서버 렌더링이 sandbox보다 촘촘해도 알아서 더 채운다. 성공값은 세션에 캐시해 다음부터 빠르게."""
     import nyung
     cached = st.session_state.get("_pdf_sp")
-    cands = ([cached] if cached else []) + [11, 9, 7, 5, 4, 3]
+    cands = ([cached] if cached else []) + [9, 7, 6, 5, 4, 3]
     seen = set(); order = [c for c in cands if not (c in seen or seen.add(c))]
     last = None
     for sp in order:
-        # 구간 사이(수신자↔발신자, 발신자↔촉구의 건, 입금표 위·아래, 실선↔날짜, 회사명↔명판)를 sp 만큼 띄워 고르게 채움
-        nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=4, item_after=3, spread=sp)
+        # 본문 번호 사이(1-2,2-3,3-4,4-5,6-7)와 구간 사이(수신자↔발신자, 발신자↔촉구의 건, 입금표 위·아래, 실선↔날짜, 회사명↔명판)를 균일하게 띄워 고르게 채움
+        nyung.make_docx(data, _REPO_DIR, pdf_src, font="Noto Sans CJK KR", date_before=2, item_after=sp, spread=sp)
         cand = _docx_to_pdf(pdf_src, workdir)
         if not cand:
             return None
