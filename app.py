@@ -181,14 +181,13 @@ def page_dashboard():
     try:
         _fp = _data_fp()
         _components.html(_dashboard_html(_fp, bd.isoformat(), ADMIN), height=760, scrolling=True)
-        if ADMIN:
-            # 팝업의 '내용증명 작성' 버튼이 같은 출처(same-origin)로 클릭할 숨은 트리거(거래처별). 화면 밖에 배치.
-            with st.container(key="nytrig"):
-                for _o in _longoverdue_cached(_fp):
-                    if st.button("NYO_" + _o["biz"], key="nyo_" + _o["biz"]):
-                        st.session_state["_routed_biz"] = _o["biz"]
-                        st.session_state["_ny_applied"] = None
-                        st.switch_page(_nyung_page)
+        # 팝업의 '내용증명 작성' 버튼이 같은 출처(same-origin)로 클릭할 숨은 트리거(거래처별). 관리자·실무자 모두.
+        with st.container(key="nytrig"):
+            for _o in _longoverdue_cached(_fp):
+                if st.button("NYO_" + _o["biz"], key="nyo_" + _o["biz"]):
+                    st.session_state["_routed_biz"] = _o["biz"]
+                    st.session_state["_ny_applied"] = None
+                    st.switch_page(_nyung_page)
     except Exception as e:
         header(); st.error(f"대시보드 생성 오류: {e}")
 
@@ -298,8 +297,6 @@ def _make_pdf_fit(data, pdf_src, workdir):
 def page_nyung():
     import nyung
     header(title="내용증명")
-    if not ADMIN:
-        st.error("내용증명 작성은 관리자 전용입니다."); return
     if st.button("← 미수 현황으로 돌아가기"):
         st.switch_page(_dashboard_page)
     if not os.path.isdir(DATA):
@@ -535,9 +532,7 @@ _dashboard_page = st.Page(page_dashboard, title="미수 현황", icon="📊", de
 _sales_page = st.Page(page_sales, title="매출 현황", icon="📈")
 _process_page = st.Page(page_process, title="자료 처리", icon="🗂")
 _nyung_page = st.Page(page_nyung, title="내용증명", icon="📄", url_path="page_nyung")
-_pages = [_dashboard_page, _sales_page]
-if ADMIN:
-    _pages.append(_nyung_page)
+_pages = [_dashboard_page, _sales_page, _nyung_page]   # 내용증명은 관리자·실무자 모두(탭은 CSS로 숨김, 팝업으로 진입)
 _pages.append(_process_page)
 _pg = st.navigation(_pages, position="top")
 _pg.run()
