@@ -95,18 +95,28 @@ const ADMIN=@@ADMIN@@;
 let FILTER='unpaid';let REGION='all';
 function gotoNyung(biz){
  // 같은 출처(same-origin)이므로 상단 창의 '숨은 네이티브 버튼'을 직접 클릭 → Streamlit 재실행(세션 유지, 새로고침 없음).
- var docs=[];
- try{ if(window.top && window.top.document) docs.push(window.top.document); }catch(e){}
- try{ if(window.parent && window.parent.document && docs.indexOf(window.parent.document)<0) docs.push(window.parent.document); }catch(e){}
- for(var d=0; d<docs.length; d++){
-  try{
-   var btns=docs[d].querySelectorAll('.st-key-nytrig button');
-   for(var i=0;i<btns.length;i++){
-    if((btns[i].innerText||btns[i].textContent||'').trim()==='NYO_'+biz){ btns[i].click(); return true; }
-   }
-  }catch(e){}
+ // 막 깨어난 직후엔 숨은 버튼이 아직 안 그려졌을 수 있어, 못 찾으면 잠깐씩 기다리며 재시도.
+ function tryClick(){
+  var docs=[];
+  try{ if(window.top && window.top.document) docs.push(window.top.document); }catch(e){}
+  try{ if(window.parent && window.parent.document && docs.indexOf(window.parent.document)<0) docs.push(window.parent.document); }catch(e){}
+  for(var d=0; d<docs.length; d++){
+   try{
+    var btns=docs[d].querySelectorAll('.st-key-nytrig button');
+    for(var i=0;i<btns.length;i++){
+     if((btns[i].innerText||btns[i].textContent||'').trim()==='NYO_'+biz){ btns[i].click(); return true; }
+    }
+   }catch(e){}
+  }
+  return false;
  }
- alert('내용증명 화면을 여는 데 실패했습니다. 페이지를 새로고침 후 다시 시도해 주세요.');
+ if(tryClick()) return true;
+ var tries=0;
+ var iv=setInterval(function(){
+  tries++;
+  if(tryClick()){ clearInterval(iv); return; }
+  if(tries>=24){ clearInterval(iv); alert('화면이 아직 준비 중입니다. 잠시 후 다시 눌러 주세요.'); }
+ }, 250);   // 최대 ~6초 재시도
  return false;
 }
 function won(x){return (x||0).toLocaleString('ko-KR')}
