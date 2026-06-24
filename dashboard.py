@@ -19,6 +19,7 @@ def _cust(path, reg, basis, duerules):
     if not m: return None
     bn = m.group(1)
     nm = re.sub(r'^[^)]*\)\s*', '', b).rsplit(' (', 1)[0]
+    nm = E.balance_parens(nm)   # 괄호 불균형 보정(파일명이 깨져 있어도 표시는 온전): 지디사이언스·세화산업사 등
     nm = RENAME.get(bn, nm)   # 상호 변경 반영(예: 유일에너테크→성원에너텍)
     wb = load_workbook(path); ws = wb.active; C = E.cols(ws)
     supmap = {}; deps = []

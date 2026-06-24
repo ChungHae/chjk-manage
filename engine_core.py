@@ -430,11 +430,19 @@ def unpaid_after_credit(ws, C, exc=None):
         use=min(it[1],credit); it[1]-=use; credit-=use
     return [(d,u) for d,u in short if u>1000]
 
+def balance_parens(s):
+    """괄호 불균형 보정: 여는 괄호가 많으면 끝에 ')', 닫는 괄호가 많으면 앞에 '(' 보충.
+    예) '지디사이언스 (GDscience.co.,LTD' → '...LTD)',  '합)세화산업사' → '(합)세화산업사'."""
+    s=str(s); o=s.count("("); c=s.count(")")
+    if o>c: s=s+")"*(o-c)
+    elif c>o: s="("*(c-o)+s
+    return s
+
 def clean_filename_name(name):
     n=LEGAL.sub("", str(name))
     n=re.sub(r"\s+"," ",n).strip()
     n=re.sub(r"\(\s*\)","",n).strip()   # 빈 괄호만 제거(앞의 (자) 같은 정상 괄호는 보존)
-    return n
+    return balance_parens(n)
 
 # ---------- 누적 ----------
 def read_existing(ws):

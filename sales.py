@@ -68,9 +68,17 @@ def _agg_store(store, boundary):
     return month, rank
 
 
+def _balance_parens(s):
+    """괄호 불균형 보정: 여는 괄호가 많으면 끝에 ')', 닫는 괄호가 많으면 앞에 '('."""
+    s = str(s); o = s.count("("); c = s.count(")")
+    if o > c: s = s + ")" * (o - c)
+    elif c > o: s = "(" * (c - o) + s
+    return s
+
+
 def _rename(s):
-    """상호 변경 규칙(예: 유일에너테크 → 성원에너텍)을 표시명에 반영."""
-    return str(s or "").replace("유일에너테크", "성원에너텍")
+    """상호 변경(유일에너테크→성원에너텍) + 괄호 불균형 보정을 표시명에 반영."""
+    return _balance_parens(str(s or "").replace("유일에너테크", "성원에너텍"))
 
 
 def _merge_rank(entries_lists):
@@ -101,7 +109,7 @@ def _clean_corp(s):
     """표시용 이름에서 법인 표기((주)·주식회사·㈜·(유)·(자) 등) 제거. (오류동) 같은 지점 표기는 유지."""
     s = str(s or "").replace("（", "(").replace("）", ")")
     s = re.sub(r"주식회사|유한회사|합자회사|㈜|\(주\)|\(유\)|\(자\)", "", s)
-    return re.sub(r"\s+", " ", s).strip()
+    return _balance_parens(re.sub(r"\s+", " ", s).strip())
 
 
 def _disp_buy(name, rep, biz):
