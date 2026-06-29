@@ -174,12 +174,19 @@ def _data_fp():
     return (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,
             len(glob.glob(os.path.join(DATA, "*", "*.xlsx"))))
 
+def _tpl_mtime(name):
+    """템플릿(HTML) 수정시각 — 캐시 키에 넣어, 템플릿만 바꿔도(재배포 시) 화면이 새로 렌더되게 함."""
+    try:
+        return os.path.getmtime(os.path.join(HERE, name))
+    except Exception:
+        return 0
+
 def page_dashboard():
     bd = basis_date() or datetime.date.today()
     if not os.path.isdir(DATA):
         header(); st.error("자료를 불러올 수 없습니다."); return
     try:
-        _fp = _data_fp()
+        _fp = _data_fp() + (_tpl_mtime("dashboard_template.html"),)
         _components.html(_dashboard_html(_fp, bd.isoformat(), ADMIN), height=760, scrolling=True)
         # 팝업의 '내용증명 작성' 버튼이 같은 출처(same-origin)로 클릭할 숨은 트리거(거래처별). 관리자·실무자 모두.
         with st.container(key="nytrig"):
@@ -206,7 +213,7 @@ def page_sales():
         return
     try:
         _bd = basis_date()
-        _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0,)
+        _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0, _tpl_mtime("sales_template.html"))
         _components.html(_sales_html(_fp, _bd.isoformat() if _bd else "", ADMIN), height=900, scrolling=True)
     except Exception as e:
         header(title="매출 현황"); st.error(f"매출 현황 생성 오류: {e}")
