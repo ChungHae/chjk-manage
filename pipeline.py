@@ -133,6 +133,11 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
         ad = E.pdate(r[0])
         if ad and r[1] and r[2] and r[3]:
             reassign[(ad.isoformat(), int(r[1]))] = (str(r[3]).strip(), str(r[2]).strip())
+    # 미배정 제외(날짜+입금자명 기준). 입금자명 비우면 그 날짜의 '공란(무명)' 입금을 지정.
+    dep_excl = set()
+    for r in _load_tbl("_미배정제외표.xlsx", "미배정제외", [1, 2]):
+        ad = E.pdate(r[0])
+        if ad: dep_excl.add((ad.isoformat(), str(r[1] or "").strip()))
     # 3) 기존 누적본 인덱스
     exist = {}; universe = defaultdict(dict)
     for f in glob.glob(os.path.join(data_dir, "서울", "*.xlsx")) + glob.glob(os.path.join(data_dir, "화성", "*.xlsx")):
@@ -177,6 +182,8 @@ def process(uploads_by_loc, data_dir, out_dir, progress=None, ref_date=None):
             for d in E.parse_bank(fp, _bnk):
                 _ra = reassign.get((d["거래일"], int(d["입금액"])))
                 if _ra: cust_dep[_ra].append(d); continue
+                _dn = "" if d["상대방명"] is None else str(d["상대방명"]).strip()
+                if any(xd == d["거래일"] and (_dn == "" if xn == "" else xn in _dn) for xd, xn in dep_excl): continue
                 kind, who = E.match_deposit(loc, d["상대방명"], universe, alias)
                 if kind == "제외": continue
                 bn = _bn_of(loc, who)
