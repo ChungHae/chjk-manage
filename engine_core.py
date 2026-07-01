@@ -63,7 +63,7 @@ def parse_bank(path, bank):
         for i,x in enumerate(h):
             if must in x and not any(e in x for e in exc): return i
         return None
-    NAME=["상대계좌예금주명","예금주명","기재내용","의뢰인/수취인","거래기록사항","거래내용","내용","적요"]
+    NAME=["상대계좌예금주명","예금주명","기재내용","의뢰인/수취인","보낸분/받는분","거래기록사항","거래내용","내용","적요"]
     def cp():
         for k in NAME:
             for i,x in enumerate(h):
