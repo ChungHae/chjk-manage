@@ -129,10 +129,10 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3,
         c=t.row_cells(0)
         for i,w in enumerate(ws): c[i].width=w
         shade(c[0]); shade(c[2])
-        cp(c[0],rows[0][0],bold=True,align=AL.CENTER); cp(c[1],rows[0][1]); cp(c[2],rows[0][2],bold=True,align=AL.CENTER); cp(c[3],rows[0][3])
+        cp(c[0],rows[0][0],bold=True,align=AL.DISTRIBUTE); cp(c[1],rows[0][1]); cp(c[2],rows[0][2],bold=True,align=AL.CENTER); cp(c[3],rows[0][3])
         c1=t.row_cells(1)
         for i,w in enumerate(ws): c1[i].width=w
-        shade(c1[0]); cp(c1[0],rows[1][0],bold=True,align=AL.CENTER)
+        shade(c1[0]); cp(c1[0],rows[1][0],bold=True,align=AL.DISTRIBUTE)
         m=c1[1].merge(c1[2]).merge(c1[3]); cp(m,rows[1][1])
         _lay=OxmlElement('w:tblLayout'); _lay.set(qn('w:type'),'fixed'); t._tbl.tblPr.append(_lay)
         _g=t._tbl.find(qn('w:tblGrid'))
@@ -144,9 +144,9 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3,
     _recv=data["거래처명"]+(f" 대표 {_rep}" if _rep else "")
     _send=f'{K["holder"]} 대표 {K["rep"]}'
     para("수신자",size=10.5,bold=True,before=2,after=2)
-    info_table([("수신인",_recv,"전화번호",data["수신전화"]),("주  소",data["수신주소"])])
+    info_table([("수신인",_recv,"전화번호",data["수신전화"]),("주소",data["수신주소"])])
     para("발신자",size=10.5,bold=True,before=5+spread,after=2)
-    info_table([("발신인",_send,"전화번호",K["tel"]),("주  소",K["addr"])])
+    info_table([("발신인",_send,"전화번호",K["tel"]),("주소",K["addr"])])
     hrule(para("미수금 지불 촉구의 건",size=10.5,bold=True,before=7+spread,after=4))
     numitem("1","귀하(社)의 무궁한 발전을 기원합니다.",before=11)
     numitem("2",f'본 내용증명은 발신인 {K["corp"]} (이하 “발신인”) 가 수신인 {data["거래처명"]} (이하 “수신인”) 에게 납품한 유공압 제품의 미지급 대금에 관한 것입니다.')
