@@ -129,10 +129,10 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3,
         c=t.row_cells(0)
         for i,w in enumerate(ws): c[i].width=w
         shade(c[0]); shade(c[2])
-        cp(c[0],rows[0][0],bold=True,align=AL.DISTRIBUTE); cp(c[1],rows[0][1]); cp(c[2],rows[0][2],bold=True,align=AL.CENTER); cp(c[3],rows[0][3])
+        cp(c[0],rows[0][0],bold=True,align=AL.CENTER); cp(c[1],rows[0][1]); cp(c[2],rows[0][2],bold=True,align=AL.CENTER); cp(c[3],rows[0][3])
         c1=t.row_cells(1)
         for i,w in enumerate(ws): c1[i].width=w
-        shade(c1[0]); cp(c1[0],rows[1][0],bold=True,align=AL.DISTRIBUTE)
+        shade(c1[0]); cp(c1[0],rows[1][0],bold=True,align=AL.CENTER)
         m=c1[1].merge(c1[2]).merge(c1[3]); cp(m,rows[1][1])
         _lay=OxmlElement('w:tblLayout'); _lay.set(qn('w:type'),'fixed'); t._tbl.tblPr.append(_lay)
         _g=t._tbl.find(qn('w:tblGrid'))
