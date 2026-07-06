@@ -13,10 +13,10 @@ F="맑은 고딕"; LS=1.23; BASE=9.5; SHADE="F2F2F2"; BORD="808080"
 KWON={
  "서울": dict(corp="충해전기 주식회사", tel="010-5228-2922",
    addr="서울특별시 구로구 구로중앙로198, B-13, 103", stamp="stamp_guro.png",
-   bank="신한은행", acct="100-001-944331", holder="충해전기(주)"),
+   bank="신한은행", acct="100-001-944331", holder="충해전기(주)", rep="김해식"),
  "화성": dict(corp="충해전기 주식회사 화성영업소", tel="010-5228-2922",
    addr="경기도 화성시 팔탄면 푸른들판로 642-5, G-103~104, 202", stamp="stamp_hwaseong.png",
-   bank="신한은행", acct="140-013-471920", holder="충해전기(주) 화성영업소"),
+   bank="신한은행", acct="140-013-471920", holder="충해전기(주) 화성영업소", rep="김재성"),
 }
 SENDER_NAME="김재성"
 
@@ -125,7 +125,7 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3,
             for i,c in enumerate(row.cells): c.width=Cm(widths_cm[i])
     def info_table(rows):
         t=doc.add_table(rows=2,cols=4); tblb(t)
-        ws=[Cm(2.2),Cm(5.3),Cm(2.2),Cm(CW.cm-9.7)]
+        wsc=[2.2,7.6,2.2,CW.cm-12.0]; ws=[Cm(x) for x in wsc]
         c=t.row_cells(0)
         for i,w in enumerate(ws): c[i].width=w
         shade(c[0]); shade(c[2])
@@ -134,13 +134,19 @@ def make_docx(data, repo_dir, out_docx, font=None, date_before=12, item_after=3,
         for i,w in enumerate(ws): c1[i].width=w
         shade(c1[0]); cp(c1[0],rows[1][0],bold=True,align=AL.CENTER)
         m=c1[1].merge(c1[2]).merge(c1[3]); cp(m,rows[1][1])
+        _lay=OxmlElement('w:tblLayout'); _lay.set(qn('w:type'),'fixed'); t._tbl.tblPr.append(_lay)
+        _g=t._tbl.find(qn('w:tblGrid'))
+        for _gc,_w in zip(list(_g),wsc): _gc.set(qn('w:w'),str(int(_w*567)))
         for r in t.rows: rh(r,0.68)
 
     para("내  용  증  명  서",AL.CENTER,size=22,bold=True,before=2,after=8)
+    _rep=str(data.get("담당자") or "").strip()
+    _recv=data["거래처명"]+(f" 대표 {_rep}" if _rep else "")
+    _send=f'{K["holder"]} 대표 {K["rep"]}'
     para("수신자",size=10.5,bold=True,before=2,after=2)
-    info_table([("성  명",data["담당자"],"전화번호",data["수신전화"]),("주  소",data["수신주소"])])
+    info_table([("수신인",_recv,"전화번호",data["수신전화"]),("주  소",data["수신주소"])])
     para("발신자",size=10.5,bold=True,before=5+spread,after=2)
-    info_table([("성  명",SENDER_NAME,"전화번호",K["tel"]),("주  소",K["addr"])])
+    info_table([("발신인",_send,"전화번호",K["tel"]),("주  소",K["addr"])])
     hrule(para("미수금 지불 촉구의 건",size=10.5,bold=True,before=7+spread,after=4))
     numitem("1","귀하(社)의 무궁한 발전을 기원합니다.",before=11)
     numitem("2",f'본 내용증명은 발신인 {K["corp"]} (이하 “발신인”) 가 수신인 {data["거래처명"]} (이하 “수신인”) 에게 납품한 유공압 제품의 미지급 대금에 관한 것입니다.')
