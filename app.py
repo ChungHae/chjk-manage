@@ -119,21 +119,39 @@ def _publish_misu_summary(summary):
     except Exception:
         pass
 
+_LOGIN_CSS = """
+<style>
+[data-testid='stSidebar'],[data-testid='stSidebarCollapsedControl'],[data-testid='stSidebarCollapseButton']{display:none!important;}
+[data-testid='stMainBlockContainer'],.block-container{max-width:460px!important;padding-top:7vh!important;}
+[data-testid='stForm']{border:1px solid rgba(26,26,26,.12);border-radius:14px;box-shadow:0 10px 34px rgba(27,58,107,.10);background:#fff;padding:0 22px 22px!important;}
+[data-testid='stForm'] label{font-size:13px!important;font-weight:600!important;color:#374151!important;}
+[data-testid='stForm'] input{background:#f7f9fc!important;border:1px solid rgba(26,26,26,.2)!important;border-radius:8px!important;padding:11px 12px!important;font-size:14px!important;}
+[data-testid='stForm'] input:focus{border-color:#1B3A6B!important;background:#fff!important;box-shadow:none!important;}
+[data-testid='stFormSubmitButton'] button{width:100%!important;background:#1B3A6B!important;border:none!important;border-radius:8px!important;padding:12px!important;}
+[data-testid='stFormSubmitButton'] button:hover{background:#14305c!important;}
+[data-testid='stFormSubmitButton'] button p{color:#fff!important;font-weight:700!important;font-size:14px!important;}
+.misu-auth-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:2px solid #1B3A6B;margin:0 -22px 18px;}
+.misu-auth-head img{height:34px;width:auto;display:block;}
+.misu-auth-head span{font-size:25px;line-height:34px;font-weight:600;color:#1B3A6B;letter-spacing:-.3px;}
+.misu-auth-foot{text-align:center;font-size:11px;color:#9ca3af;margin-top:14px;}
+</style>
+"""
+
 def check_pw():
     if st.session_state.get("auth"): return True
-    st.markdown("<style>[data-testid='stSidebar'],[data-testid='stSidebarCollapsedControl'],[data-testid='stSidebarCollapseButton']{display:none!important;}</style>", unsafe_allow_html=True)
     box = st.empty()
     with box.container():
-        header(full=False)
+        st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
         with st.form("login_form"):
-            uid = st.text_input("성명")
-            pw = st.text_input("비밀번호", type="password")
+            st.markdown("<div class='misu-auth-head'><img src='" + LOGO + "' alt='충해전기(주)' onerror=\"this.style.display='none'\"><span>미수 관리</span></div>", unsafe_allow_html=True)
+            uid = st.text_input("성명", placeholder="성명")
+            pw = st.text_input("비밀번호", type="password", placeholder="비밀번호")
             submitted = st.form_submit_button("로그인")
-        st.caption("업무관리 앱과 동일한 성명·비밀번호로 로그인합니다.")
+            st.markdown("<div class='misu-auth-foot'>충해전기(주) 내부 운영 시스템 · 관계자 외 접근 금지</div>", unsafe_allow_html=True)
     if submitted:
         ok, role, err = _fb_login((uid or "").strip(), pw or "")
         if ok:
-            box.empty()   # 로그인 화면 즉시 제거 → 잔상 방지
+            box.empty()
             st.session_state.update(auth=True, role=role, uid=(uid or "").strip())
             st.rerun()
         else:
@@ -261,6 +279,29 @@ def _tpl_mtime(name):
         return 0
 
 @st.cache_data(show_spinner=False)
+def _sales_summary_data(_fp):
+    try:
+        import sales as _sales
+        bd = _sales.build_data(DATA, _REPO_DIR)
+        if not bd: return {}
+        years = bd.get("years") or {}; summ = bd.get("summary") or {}
+        if not years: return {}
+        cy = max(years.keys())
+        sby = summ.get("매출 (계산서 기준)", {}); pby = summ.get("매출총이익", {}); mby = summ.get("마진율", {})
+        months = [e for e in years.get(cy, []) if e.get("매출합")]
+        lm = months[-1] if months else None
+        return {
+            "sales_year": cy,
+            "sales_year_total": int(sby.get(cy, 0) or 0),
+            "sales_year_profit": int(pby.get(cy, 0) or 0),
+            "sales_year_margin": round(float(mby.get(cy, 0) or 0) * 100, 1),
+            "sales_latest_month": (lm.get("월") if lm else ""),
+            "sales_latest_month_total": int(lm.get("매출합", 0)) if lm else 0,
+        }
+    except Exception:
+        return {}
+
+@st.cache_data(show_spinner=False)
 def _misu_summary_data(_fp, basis_iso):
     import dashboard as _dash
     bd = datetime.date.fromisoformat(basis_iso)
@@ -296,7 +337,10 @@ def page_dashboard():
     except Exception as e:
         header(); st.error(f"대시보드 생성 오류: {e}")
     try:
-        _publish_misu_summary(_misu_summary_data(_fp, bd.isoformat()))
+        _sum = dict(_misu_summary_data(_fp, bd.isoformat()))
+        try: _sum.update(_sales_summary_data(_fp))
+        except Exception: pass
+        _publish_misu_summary(_sum)
     except Exception:
         pass
 
