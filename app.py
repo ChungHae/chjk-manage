@@ -121,29 +121,28 @@ def _publish_misu_summary(summary):
 
 _LOGIN_CSS = """
 <style>
-/* 크롬 숨김 */
 [data-testid='stSidebar'],[data-testid='stSidebarCollapsedControl'],[data-testid='stSidebarCollapseButton'],[data-testid='stToolbar'],[data-testid='stHeader'],#MainMenu,footer{display:none!important;}
-/* 페이지 + 카드 */
-[data-testid='stMainBlockContainer'],.block-container,.stMainBlockContainer{max-width:420px!important;padding:8vh 16px 16px!important;}
+/* 페이지 세로 중앙 + 카드 폭 */
+[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:420px!important;padding:16px!important;margin:0 auto!important;min-height:100vh!important;display:flex!important;flex-direction:column!important;justify-content:center!important;}
 [data-testid='stForm']{border:1px solid rgba(26,26,26,.12)!important;border-radius:14px!important;box-shadow:0 10px 34px rgba(27,58,107,.10)!important;background:#fff!important;padding:0 22px 22px!important;}
-[data-testid='stForm'] [data-testid='stVerticalBlock']{gap:.55rem!important;}
-/* 헤더 (로고+제목, 하단 네이비 라인) */
+[data-testid='stForm'],[data-testid='stForm'] *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif!important;}
+[data-testid='stForm'] [data-testid='stVerticalBlock']{gap:.5rem!important;}
 .misu-auth-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:2px solid #1B3A6B;margin:0 -22px 16px;}
 .misu-auth-head img{height:34px;width:auto;display:block;}
 .misu-auth-head span{font-size:25px;line-height:34px;font-weight:600;color:#1B3A6B;letter-spacing:-.3px;}
 .misu-auth-foot{text-align:center;font-size:11px;color:#9ca3af;margin-top:14px;}
-/* 라벨 */
 [data-testid='stForm'] [data-testid='stWidgetLabel']{margin-bottom:6px!important;}
 [data-testid='stForm'] [data-testid='stWidgetLabel'] p{font-size:13px!important;font-weight:600!important;color:#374151!important;}
-/* 입력창: 바깥 BaseWeb 래퍼가 실제 테두리/배경 */
+/* 입력창 (테마 파란 배경 덮어쓰기) */
 [data-testid='stForm'] [data-baseweb='input']{background:#f7f9fc!important;border:1px solid rgba(26,26,26,.2)!important;border-radius:8px!important;}
 [data-testid='stForm'] [data-baseweb='input']:focus-within{border-color:#1B3A6B!important;background:#fff!important;}
 [data-testid='stForm'] [data-baseweb='base-input']{background:transparent!important;border:none!important;}
 [data-testid='stForm'] [data-baseweb='input'] input{background:transparent!important;border:none!important;font-size:14px!important;padding:11px 12px!important;color:#111827!important;-webkit-text-fill-color:#111827!important;}
 [data-testid='stForm'] [data-baseweb='input'] input::placeholder{color:#9ca3af!important;}
+[data-testid='stForm'] [data-baseweb='input'] button{display:none!important;}
 [data-testid='stForm'] [data-testid='InputInstructions']{display:none!important;}
-/* 로그인 버튼 */
-[data-testid='stFormSubmitButton']{margin-top:8px!important;}
+/* 로그인 버튼 (전폭) */
+[data-testid='stFormSubmitButton']{width:100%!important;margin-top:10px!important;}
 [data-testid='stFormSubmitButton'] button{width:100%!important;background:#1B3A6B!important;border:1px solid #1B3A6B!important;border-radius:8px!important;padding:12px!important;min-height:auto!important;box-shadow:none!important;}
 [data-testid='stFormSubmitButton'] button:hover{background:#14305c!important;border-color:#14305c!important;}
 [data-testid='stFormSubmitButton'] button:focus{box-shadow:none!important;}
@@ -160,7 +159,7 @@ def check_pw():
             st.markdown("<div class='misu-auth-head'><img src='" + LOGO + "' alt='충해전기(주)' onerror=\"this.style.display='none'\"><span>미수 관리</span></div>", unsafe_allow_html=True)
             uid = st.text_input("성명", placeholder="성명")
             pw = st.text_input("비밀번호", type="password", placeholder="비밀번호")
-            submitted = st.form_submit_button("로그인")
+            submitted = st.form_submit_button("로그인", use_container_width=True)
             st.markdown("<div class='misu-auth-foot'>충해전기(주) 내부 운영 시스템 · 관계자 외 접근 금지</div>", unsafe_allow_html=True)
     if submitted:
         ok, role, err = _fb_login((uid or "").strip(), pw or "")
