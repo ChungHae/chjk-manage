@@ -6,7 +6,8 @@ name: Keep Streamlit app awake
 
 on:
   schedule:
-    - cron: '0 */6 * * *'      # 6시간마다 (UTC 기준). 필요시 간격 조절.
+    - cron: '0 21 * * *'      # 매일 아침 06:00 (한국시간 KST = UTC+9)
+    - cron: '0 9 * * *'       # 매일 저녁 18:00 (한국시간 KST = UTC+9)
   workflow_dispatch:            # 수동 실행 버튼
 
 jobs:
