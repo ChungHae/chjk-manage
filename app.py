@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os, io, zipfile, tempfile, glob, datetime, re
+import hashlib, requests
 import streamlit as st
 import pandas as pd
 from openpyxl import load_workbook
@@ -41,24 +42,61 @@ def header(full=True, title=None):
         f"<div style='font-size:12px;letter-spacing:2px;color:#888;'>{sub}</div></div></div>",
         unsafe_allow_html=True)
 
+# ── 업무관리 앱과 로그인 공유 (동일 Firebase 계정) ──
+_FB_API_KEY = "AIzaSyBTYey9GzRIRRqiiZoQ3gpxI-Ty1BhXyZU"
+_FB_DB_URL  = "https://chjk-scheduler-default-rtdb.asia-southeast1.firebasedatabase.app"
+_FB_PATH    = "teamdata_test"
+MISU_ADMIN_IDS = ["chjk", "김소준"]   # 자료처리 전체 권한 (그 외 계정은 조회 전용)
+
+def _sha256(v):
+    return hashlib.sha256(str(v).encode("utf-8")).hexdigest()
+
+def _synth_email(uid):
+    return "u" + _sha256(uid)[:32] + "@chjk-scheduler.web.app"
+
+def _fb_login(uid, pw):
+    """업무관리와 동일한 Firebase 계정으로 검증. return (ok, role, err)."""
+    if not uid or not pw:
+        return False, None, "성명과 비밀번호를 입력하세요."
+    try:
+        r = requests.post(
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + _FB_API_KEY,
+            json={"email": _synth_email(uid), "password": _sha256(pw), "returnSecureToken": True},
+            timeout=15)
+    except Exception:
+        return False, None, "서버 연결에 실패했습니다. 잠시 후 다시 시도하세요."
+    if r.status_code != 200:
+        return False, None, "성명 또는 비밀번호가 올바르지 않습니다."
+    d = r.json(); token = d.get("idToken"); fuid = d.get("localId")
+    try:
+        a = requests.get(_FB_DB_URL + "/" + _FB_PATH + "_authorized/" + str(fuid) + ".json?auth=" + str(token), timeout=15)
+        allowed = (a.status_code == 200 and a.json() is True)
+    except Exception:
+        allowed = False
+    if not allowed:
+        return False, None, "접근이 허용되지 않은 계정입니다. 관리자에게 문의하세요."
+    role = "admin" if uid in MISU_ADMIN_IDS else "view"
+    return True, role, ""
+
 def check_pw():
     if st.session_state.get("auth"): return True
     st.markdown("<style>[data-testid='stSidebar'],[data-testid='stSidebarCollapsedControl'],[data-testid='stSidebarCollapseButton']{display:none!important;}</style>", unsafe_allow_html=True)
-    pw_admin = st.secrets.get("password_admin", st.secrets.get("password", os.environ.get("APP_PW", "chunghae")))
-    pw_view = st.secrets.get("password_view", os.environ.get("APP_PW_VIEW", ""))
     box = st.empty()
     with box.container():
         header(full=False)
         with st.form("login_form"):
-            x = st.text_input("비밀번호", type="password")
+            uid = st.text_input("성명")
+            pw = st.text_input("비밀번호", type="password")
             submitted = st.form_submit_button("로그인")
+        st.caption("업무관리 앱과 동일한 성명·비밀번호로 로그인합니다.")
     if submitted:
-        if x == pw_admin or (pw_view and x == pw_view):
-            box.empty()   # 로그인 화면을 즉시 제거 → 다음 화면 로딩 중 잔상(흐린 비밀번호칸) 방지
-            st.session_state.update(auth=True, role=("admin" if x == pw_admin else "view"))
+        ok, role, err = _fb_login((uid or "").strip(), pw or "")
+        if ok:
+            box.empty()   # 로그인 화면 즉시 제거 → 잔상 방지
+            st.session_state.update(auth=True, role=role, uid=(uid or "").strip())
             st.rerun()
         else:
-            st.error("비밀번호가 틀립니다.")
+            st.error(err)
     return False
 
 def zip_bytes(d, dirs_only=None):
