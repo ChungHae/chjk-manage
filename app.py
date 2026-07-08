@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os, io, zipfile, tempfile, glob, datetime, re
-import hashlib, requests
+import hashlib, requests, json
 import streamlit as st
 import pandas as pd
 from openpyxl import load_workbook
@@ -161,6 +161,35 @@ def check_pw():
             pw = st.text_input("비밀번호", type="password", placeholder="비밀번호")
             submitted = st.form_submit_button("로그인", use_container_width=True)
             st.markdown("<div class='misu-auth-foot'>충해전기(주) 내부 운영 시스템 · 관계자 외 접근 금지</div>", unsafe_allow_html=True)
+    _components.html("""
+<script>
+(function(){
+  var tries=0;
+  var t=setInterval(function(){
+    tries++;
+    try{
+      var d=window.parent.document;
+      var last=window.parent.localStorage.getItem('misu_last_user')||'';
+      var inputs=d.querySelectorAll("[data-testid='stForm'] input");
+      if(inputs.length>=2){
+        var nameInput=null,pwInput=null;
+        inputs.forEach(function(i){ if(i.type==='password'){ if(!pwInput)pwInput=i;} else if(!nameInput){nameInput=i;} });
+        if(nameInput){
+          if(last && !nameInput.value){
+            var setter=Object.getOwnPropertyDescriptor(window.parent.HTMLInputElement.prototype,'value').set;
+            setter.call(nameInput,last);
+            nameInput.dispatchEvent(new Event('input',{bubbles:true}));
+            if(pwInput) pwInput.focus();
+          }
+          clearInterval(t);
+        }
+      }
+      if(tries>25) clearInterval(t);
+    }catch(e){ clearInterval(t); }
+  },100);
+})();
+</script>
+""", height=0)
     if submitted:
         ok, role, err = _fb_login((uid or "").strip(), pw or "")
         if ok:
@@ -303,6 +332,10 @@ def _sales_summary_data(_fp):
         sby = summ.get("매출 (계산서 기준)", {}); pby = summ.get("매출총이익", {}); mby = summ.get("마진율", {})
         months = [e for e in years.get(cy, []) if e.get("매출합")]
         lm = months[-1] if months else None
+        buyby = summ.get("매입 (계산서 기준)", {})
+        yrs = sorted(years.keys())[-6:]
+        yearly = [{"y": y, "sales": int(sby.get(y, 0) or 0), "buy": int(buyby.get(y, 0) or 0)} for y in yrs]
+        monthly = [{"m": e.get("월"), "sales": int(e.get("매출합", 0) or 0), "buy": int(e.get("매입합", 0) or 0)} for e in years.get(cy, [])]
         return {
             "sales_year": cy,
             "sales_year_total": int(sby.get(cy, 0) or 0),
@@ -310,6 +343,8 @@ def _sales_summary_data(_fp):
             "sales_year_margin": round(float(mby.get(cy, 0) or 0) * 100, 1),
             "sales_latest_month": (lm.get("월") if lm else ""),
             "sales_latest_month_total": int(lm.get("매출합", 0)) if lm else 0,
+            "sales_yearly": yearly,
+            "sales_monthly": monthly,
         }
     except Exception:
         return {}
@@ -693,6 +728,8 @@ def page_process():
 
 if not check_pw(): st.stop()
 ADMIN = st.session_state.get("role") == "admin"
+if st.session_state.get("uid"):
+    _components.html("<script>try{window.parent.localStorage.setItem('misu_last_user'," + json.dumps(st.session_state.get("uid","")) + ");}catch(e){}</script>", height=0)
 # 페이지 객체(전역) — 팝업 트리거와 '돌아가기'에서 st.switch_page 로 이동. 미수현황 탭은 항상 홈으로 복귀.
 _dashboard_page = st.Page(page_dashboard, title="미수 현황", icon="📊", default=True)
 _sales_page = st.Page(page_sales, title="매출 현황", icon="📈")
