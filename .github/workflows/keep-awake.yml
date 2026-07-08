@@ -1,0 +1,62 @@
+name: Keep Streamlit app awake
+
+# Streamlit Community Cloud(무료)는 일정 시간 방문이 없으면 잠듭니다.
+# 이 워크플로가 정기적으로 실제 브라우저(Chromium)로 앱을 열어 깨어 있게 유지합니다.
+# 단순 HTTP 요청은 200만 반환하고 실제로는 안 깨어나므로 Playwright(진짜 브라우저)를 씁니다.
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'      # 6시간마다 (UTC 기준). 필요시 간격 조절.
+  workflow_dispatch:            # 수동 실행 버튼
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Visit app and click wake button if sleeping
+        env:
+          # ▼▼ 실제 앱 주소로 바꿔주세요 ▼▼
+          APP_URL: https://chjk-manage.streamlit.app
+        run: |
+          python - <<'PY'
+          import os, time
+          from playwright.sync_api import sync_playwright
+
+          url = os.environ["APP_URL"]
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page()
+              page.goto(url, wait_until="networkidle", timeout=90000)
+              time.sleep(5)
+
+              # 잠자기 화면이면 '깨우기' 버튼을 눌러 컨테이너를 깨움
+              clicked = False
+              for sel in [
+                  'button:has-text("Yes, get this app back up")',
+                  'button:has-text("get this app back up")',
+                  'button:has-text("app back up")',
+              ]:
+                  try:
+                      if page.locator(sel).count() > 0:
+                          page.locator(sel).first.click()
+                          print("깨우기 버튼 클릭됨")
+                          clicked = True
+                          page.wait_for_timeout(20000)   # 부팅 대기
+                          break
+                  except Exception as e:
+                      print("selector skip:", e)
+
+              if not clicked:
+                  print("이미 깨어 있음(또는 버튼 없음)")
+              print("최종 페이지 제목:", page.title())
+              browser.close()
+          PY
