@@ -75,8 +75,49 @@ def _fb_login(uid, pw):
         allowed = False
     if not allowed:
         return False, None, "접근이 허용되지 않은 계정입니다. 관리자에게 문의하세요."
+    import time as _t
+    st.session_state["_fb_tok"] = token
+    st.session_state["_fb_ref"] = d.get("refreshToken")
+    st.session_state["_fb_tok_at"] = _t.time()
     role = "admin" if uid in MISU_ADMIN_IDS else "view"
     return True, role, ""
+
+def _fb_id_token():
+    """저장된 토큰 재사용, 만료 임박 시 refresh_token으로 갱신. 실패 시 None."""
+    import time as _t
+    tok = st.session_state.get("_fb_tok"); at = st.session_state.get("_fb_tok_at", 0)
+    if tok and (_t.time() - at) < 3300:
+        return tok
+    ref = st.session_state.get("_fb_ref")
+    if not ref: return None
+    try:
+        r = requests.post("https://securetoken.googleapis.com/v1/token?key=" + _FB_API_KEY,
+                          data={"grant_type": "refresh_token", "refresh_token": ref}, timeout=15)
+        if r.status_code == 200:
+            j = r.json(); nt = j.get("id_token")
+            st.session_state["_fb_tok"] = nt
+            st.session_state["_fb_ref"] = j.get("refresh_token", ref)
+            st.session_state["_fb_tok_at"] = _t.time()
+            return nt
+    except Exception:
+        return None
+    return None
+
+def _publish_misu_summary(summary):
+    """미수 요약을 Firebase 전용 키에 저장(업무관리 카드용). 실패해도 화면에 영향 없음."""
+    try:
+        import json as _json
+        sig = _json.dumps({k: v for k, v in summary.items() if k != "updatedAt"},
+                          ensure_ascii=False, sort_keys=True)
+        if st.session_state.get("_misu_pub_sig") == sig: return
+        tok = _fb_id_token()
+        if not tok: return
+        r = requests.put(_FB_DB_URL + "/" + _FB_PATH + "_misu_summary.json?auth=" + tok,
+                         json=summary, timeout=10)
+        if r.status_code == 200:
+            st.session_state["_misu_pub_sig"] = sig
+    except Exception:
+        pass
 
 def check_pw():
     if st.session_state.get("auth"): return True
@@ -219,6 +260,25 @@ def _tpl_mtime(name):
     except Exception:
         return 0
 
+@st.cache_data(show_spinner=False)
+def _misu_summary_data(_fp, basis_iso):
+    import dashboard as _dash
+    bd = datetime.date.fromisoformat(basis_iso)
+    data = _dash.compute_data(DATA, bd, _duerules())
+    unpaid = [o for o in data if o["status"] in ("미수", "장기미수")]
+    longx = [o for o in data if o["status"] == "장기미수"]
+    return {
+        "basis": basis_iso,
+        "updatedAt": datetime.datetime.now().isoformat(timespec="seconds"),
+        "customer_count": len(data),
+        "unpaid_count": len(unpaid),
+        "longoverdue_count": len(longx),
+        "total_unpaid": int(sum(o["amt"] for o in unpaid)),
+        "seoul_unpaid": int(sum(o["amt"] for o in unpaid if o["reg"] == "서울")),
+        "hwaseong_unpaid": int(sum(o["amt"] for o in unpaid if o["reg"] == "화성")),
+        "longoverdue_amt": int(sum(o["amt"] for o in longx)),
+    }
+
 def page_dashboard():
     bd = basis_date() or datetime.date.today()
     if not os.path.isdir(DATA):
@@ -235,6 +295,10 @@ def page_dashboard():
                     st.switch_page(_nyung_page)
     except Exception as e:
         header(); st.error(f"대시보드 생성 오류: {e}")
+    try:
+        _publish_misu_summary(_misu_summary_data(_fp, bd.isoformat()))
+    except Exception:
+        pass
 
 # ===== 매출 현황 페이지 =====
 @st.cache_data(show_spinner="매출 현황 불러오는 중…")
