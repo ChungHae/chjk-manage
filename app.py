@@ -122,8 +122,9 @@ def _publish_misu_summary(summary):
 _LOGIN_CSS = """
 <style>
 [data-testid='stSidebar'],[data-testid='stSidebarCollapsedControl'],[data-testid='stSidebarCollapseButton'],[data-testid='stToolbar'],[data-testid='stHeader'],#MainMenu,footer{display:none!important;}
-/* 페이지 세로 중앙 + 카드 폭 */
+/* 세로 중앙 + 카드 폭 (검증된 선택자) */
 [data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:420px!important;padding:16px!important;margin:0 auto!important;min-height:100vh!important;display:flex!important;flex-direction:column!important;justify-content:center!important;}
+[data-testid='stMainBlockContainer'] [data-testid='stVerticalBlock']{flex:0 0 auto!important;}
 [data-testid='stForm']{border:1px solid rgba(26,26,26,.12)!important;border-radius:14px!important;box-shadow:0 10px 34px rgba(27,58,107,.10)!important;background:#fff!important;padding:0 22px 22px!important;}
 [data-testid='stForm'],[data-testid='stForm'] *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif!important;}
 [data-testid='stForm'] [data-testid='stVerticalBlock']{gap:.5rem!important;}
@@ -133,13 +134,12 @@ _LOGIN_CSS = """
 .misu-auth-foot{text-align:center;font-size:11px;color:#9ca3af;margin-top:14px;}
 [data-testid='stForm'] [data-testid='stWidgetLabel']{margin-bottom:6px!important;}
 [data-testid='stForm'] [data-testid='stWidgetLabel'] p{font-size:13px!important;font-weight:600!important;color:#374151!important;}
-/* 입력창 (테마 파란 배경 덮어쓰기) */
-[data-testid='stForm'] [data-baseweb='input']{background:#f7f9fc!important;border:1px solid rgba(26,26,26,.2)!important;border-radius:8px!important;}
-[data-testid='stForm'] [data-baseweb='input']:focus-within{border-color:#1B3A6B!important;background:#fff!important;}
-[data-testid='stForm'] [data-baseweb='base-input']{background:transparent!important;border:none!important;}
-[data-testid='stForm'] [data-baseweb='input'] input{background:transparent!important;border:none!important;font-size:14px!important;padding:11px 12px!important;color:#111827!important;-webkit-text-fill-color:#111827!important;}
-[data-testid='stForm'] [data-baseweb='input'] input::placeholder{color:#9ca3af!important;}
-[data-testid='stForm'] [data-baseweb='input'] button{display:none!important;}
+/* 입력창: 파란 배경은 stTextInputRootElement 에 있음 */
+[data-testid='stForm'] [data-testid='stTextInputRootElement']{background:#f7f9fc!important;border:1px solid rgba(26,26,26,.2)!important;border-radius:8px!important;}
+[data-testid='stForm'] [data-testid='stTextInputRootElement']:focus-within{border-color:#1B3A6B!important;background:#fff!important;}
+[data-testid='stForm'] [data-testid='stTextInput'] input{background:transparent!important;border:none!important;font-size:14px!important;padding:11px 12px!important;color:#111827!important;-webkit-text-fill-color:#111827!important;}
+[data-testid='stForm'] [data-testid='stTextInput'] input::placeholder{color:#9ca3af!important;}
+[data-testid='stForm'] [data-testid='stTextInput'] button{display:none!important;}
 [data-testid='stForm'] [data-testid='InputInstructions']{display:none!important;}
 /* 로그인 버튼 (전폭) */
 [data-testid='stFormSubmitButton']{width:100%!important;margin-top:10px!important;}
