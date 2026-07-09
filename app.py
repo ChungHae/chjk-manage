@@ -11,20 +11,29 @@ import streamlit.components.v1 as _components
 _components.html("<script>window.parent.document.title='충해전기 관리시스템';</script>", height=0)
 st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1320px;margin:0 auto;padding-top:1.4rem;padding-left:3rem;padding-right:3rem;}@media(max-width:640px){.block-container{padding-left:0.7rem!important;padding-right:0.7rem!important;}}</style><style>iframe[height='0']{display:none;}.st-key-nytrig{position:fixed!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;overflow:hidden!important;}a[href$='page_nyung'],[data-testid='stTopNavLink'][href$='page_nyung'],[data-testid='stTopNavLinkContainer']:has(a[href$='page_nyung']),li:has(a[href$='page_nyung']),[data-testid='stSidebarNavItems'] li:has(a[href$='page_nyung']){display:none!important;}</style>", unsafe_allow_html=True)
 st.markdown("""<style>
-/* 작은 화면에서도 상단 네비게이션(카테고리)을 접지 않고 모두 표시 */
-@media (max-width: 860px){
-  header[data-testid="stHeader"]{ height:auto !important; flex-wrap:wrap !important; }
-  [data-testid="stTopNav"], [data-testid="stTopNavContainer"], [data-testid="stTopNavList"],
-  [data-testid="stTopNavLinks"], [data-testid="stTopNavSection"]{
-    display:flex !important; flex-wrap:wrap !important; row-gap:2px !important; column-gap:2px !important;
-    max-width:100% !important; width:100% !important; overflow:visible !important;
+/* 작은 화면(≤768px)에서 Streamlit은 상단 탭 대신 네비게이션을 사이드바(햄버거)로 옮긴다.
+   그 사이드바 네비를 다시 상단 가로바로 꺼내 모든 카테고리를 PC처럼 상단에 표시한다. */
+@media (max-width: 768px){
+  section[data-testid="stSidebar"]{ transform:none !important; }
+  [data-testid="stSidebarNav"]{
+    position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
+    width:100vw !important; max-width:100vw !important; box-sizing:border-box !important;
+    z-index:2147483000 !important; background:#fff !important;
+    border-bottom:1px solid #d6e0ec !important; box-shadow:0 1px 5px rgba(0,0,0,.12) !important;
+    padding:5px 6px !important; margin:0 !important;
   }
-  [data-testid="stTopNavLinkContainer"]{ display:flex !important; flex:0 0 auto !important; }
-  [data-testid="stTopNavLink"]{ display:inline-flex !important; white-space:nowrap !important;
-    padding-left:8px !important; padding-right:8px !important; font-size:13px !important; }
-  /* 넘칠 때 링크를 감추는 오버플로/더보기 버튼 숨김 */
-  [data-testid="stTopNavMoreButton"], [data-testid="stTopNavMenuButton"],
-  [data-testid="stTopNavOverflowButton"], [data-testid="stTopNavOverflow"]{ display:none !important; }
+  [data-testid="stSidebarNavItems"]{
+    display:flex !important; flex-direction:row !important; flex-wrap:wrap !important;
+    justify-content:center !important; gap:4px !important;
+    max-height:none !important; padding:0 !important; margin:0 !important; list-style:none !important;
+  }
+  [data-testid="stSidebarNavItems"] li, [data-testid="stSidebarNavLinkContainer"]{ width:auto !important; margin:0 !important; }
+  [data-testid="stSidebarNavLink"]{
+    width:auto !important; padding:5px 10px !important; white-space:nowrap !important;
+    border:1px solid #e0e6ee !important; border-radius:7px !important;
+  }
+  [data-testid="stExpandSidebarButton"]{ display:none !important; }
+  [data-testid="stMainBlockContainer"]{ padding-top:66px !important; }
 }
 </style>""", unsafe_allow_html=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
