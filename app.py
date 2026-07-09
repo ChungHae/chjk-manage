@@ -35,7 +35,10 @@ st.markdown("""<style>
     border:1px solid #e0e6ee !important; border-radius:7px !important;
   }
   [data-testid="stExpandSidebarButton"]{ display:none !important; }
-  [data-testid="stMainBlockContainer"]{ padding-top:66px !important; }
+  /* 상단의 숨은 주입용 요소(height=0 iframe·<style> 마크다운)가 세로 gap을 먹어 로고까지 공백이 큼 → 접기 */
+  [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(iframe[height="0"]),
+  [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] style){ display:none !important; }
+  [data-testid="stMainBlockContainer"]{ padding-top:60px !important; }
 }
 </style>""", unsafe_allow_html=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
