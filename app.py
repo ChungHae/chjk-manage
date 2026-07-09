@@ -14,7 +14,9 @@ st.markdown("""<style>
 /* 작은 화면(≤768px)에서 Streamlit은 상단 탭 대신 네비게이션을 사이드바(햄버거)로 옮긴다.
    그 사이드바 네비를 다시 상단 가로바로 꺼내 모든 카테고리를 PC처럼 상단에 표시한다. */
 @media (max-width: 768px){
-  section[data-testid="stSidebar"]{ transform:none !important; }
+  /* 사이드바(드로어)를 폭 0으로 강제 고정 → 네비 클릭 시 드로어가 열려도 화면을 덮지 않음 */
+  section[data-testid="stSidebar"]{ transform:none !important; width:0 !important; min-width:0 !important; max-width:0 !important; }
+  [data-testid="stSidebarContent"]{ overflow:visible !important; }
   [data-testid="stSidebarNav"]{
     position:fixed !important; top:0 !important; left:0 !important; right:0 !important;
     width:100vw !important; max-width:100vw !important; box-sizing:border-box !important;
