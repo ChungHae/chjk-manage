@@ -36,9 +36,9 @@ st.markdown("""<style>
   }
   [data-testid="stExpandSidebarButton"]{ display:none !important; }
   /* 상단의 숨은 주입용 요소(height=0 iframe·<style> 마크다운)가 세로 gap을 먹어 로고까지 공백이 큼 → 접기 */
-  [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(iframe[height="0"]),
+  [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(iframe[scrolling="no"]),
   [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] style){ display:none !important; }
-  [data-testid="stMainBlockContainer"]{ padding-top:52px !important; }
+  [data-testid="stMainBlockContainer"]{ padding-top:58px !important; }
   /* 네이티브 header()(자료처리 등) 로고·제목을 미수현황 모바일 크기(로고 40·제목 18·부제 11)에 맞춤 */
   .pg-hdr{ gap:10px !important; margin:6px 0 14px !important; }
   .pg-hdr-logo{ height:40px !important; }
