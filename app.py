@@ -38,7 +38,12 @@ st.markdown("""<style>
   /* 상단의 숨은 주입용 요소(height=0 iframe·<style> 마크다운)가 세로 gap을 먹어 로고까지 공백이 큼 → 접기 */
   [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(iframe[height="0"]),
   [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] style){ display:none !important; }
-  [data-testid="stMainBlockContainer"]{ padding-top:60px !important; }
+  [data-testid="stMainBlockContainer"]{ padding-top:52px !important; }
+  /* 네이티브 header()(자료처리 등) 로고·제목을 미수현황 모바일 크기(로고 40·제목 18·부제 11)에 맞춤 */
+  .pg-hdr{ gap:10px !important; margin:6px 0 14px !important; }
+  .pg-hdr-logo{ height:40px !important; }
+  .pg-hdr-title{ font-size:18px !important; }
+  .pg-hdr-sub{ font-size:11px !important; letter-spacing:1px !important; }
 }
 </style>""", unsafe_allow_html=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -67,10 +72,10 @@ def header(full=True, title=None):
     bd = basis_date()
     sub = f"현재 자료: {bd.year}년 {bd.month}월 {bd.day}일 기준" if (full and bd) else ""
     st.markdown(
-        f"<div style='display:flex;align-items:center;gap:18px;border-bottom:2px solid {NAVY};padding-bottom:12px;margin:6px 0 16px;'>"
-        f"<img src='{LOGO}' style='height:52px;width:auto;object-fit:contain;' onerror=\"this.style.display='none'\">"
-        f"<div><div style='font-size:22px;font-weight:600;color:{NAVY};line-height:1.25;'>{title}</div>"
-        f"<div style='font-size:12px;letter-spacing:2px;color:#888;'>{sub}</div></div></div>",
+        f"<div class='pg-hdr' style='display:flex;align-items:center;gap:18px;border-bottom:2px solid {NAVY};padding-bottom:12px;margin:6px 0 16px;'>"
+        f"<img class='pg-hdr-logo' src='{LOGO}' style='height:52px;width:auto;object-fit:contain;' onerror=\"this.style.display='none'\">"
+        f"<div><div class='pg-hdr-title' style='font-size:22px;font-weight:600;color:{NAVY};line-height:1.25;'>{title}</div>"
+        f"<div class='pg-hdr-sub' style='font-size:12px;letter-spacing:2px;color:#888;'>{sub}</div></div></div>",
         unsafe_allow_html=True)
 
 # ── 업무관리 앱과 로그인 공유 (동일 Firebase 계정) ──
