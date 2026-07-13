@@ -86,3 +86,38 @@ def clone_data_repo(data_repo, token, dest):
         return dest
     except Exception:
         return None
+
+def save_alias_rows(work_dir, rows, data_zip):
+    """미배정 입금자명 → 거래처 매핑을 _거래처별칭표.xlsx에 추가/갱신한 뒤 data.zip 재생성.
+    rows = [(지역, 입금자명, 대상거래처 or '제외')]
+    같은 (지역, 정규화 입금자명)이 이미 있으면 값만 갱신한다.
+    거래처 자료를 바꾸지 않으므로 _직전본.zip(복구지점)은 건드리지 않는다. 이력은 git 커밋으로 남는다."""
+    if not rows: return 0
+    from openpyxl import Workbook, load_workbook
+    import engine_core as E
+    p = os.path.join(work_dir, "_거래처별칭표.xlsx")
+    if os.path.exists(p):
+        wb = load_workbook(p)
+        ws = wb["Sheet"] if "Sheet" in wb.sheetnames else wb.active
+    else:
+        wb = Workbook(); ws = wb.active; ws.title = "Sheet"
+        ws.cell(1, 1, "지역"); ws.cell(1, 2, "입금자명"); ws.cell(1, 3, "대상거래처")
+    idx = {}
+    for r in range(2, ws.max_row + 1):
+        loc, nm = ws.cell(r, 1).value, ws.cell(r, 2).value
+        if loc and nm:
+            idx[(str(loc).strip(), E.cname(nm))] = r
+    nxt = ws.max_row + 1
+    n = 0
+    for loc, nm, tg in rows:
+        loc = str(loc or "").strip(); nm = str(nm or "").strip(); tg = str(tg or "").strip()
+        if not (loc and nm and tg): continue
+        k = (loc, E.cname(nm))
+        r = idx.get(k)
+        if not r:
+            r = nxt; nxt += 1; idx[k] = r
+        ws.cell(r, 1, loc); ws.cell(r, 2, nm); ws.cell(r, 3, tg)
+        n += 1
+    wb.save(p)
+    _zip_dir(work_dir, data_zip)
+    return n

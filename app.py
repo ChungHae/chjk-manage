@@ -319,6 +319,8 @@ def render_result(R):
             st.dataframe(udf, use_container_width=True, hide_index=True)
             st.download_button("미배정 목록 CSV 다운로드", udf.to_csv(index=False).encode("utf-8-sig"),
                                file_name="미배정입금.csv", mime="text/csv", key="dl_un")
+            if ADMIN:
+                _render_alias_editor(udf)
     # 최종 결과 + 다운로드
     if R["ok"]:
         st.success("검증 통과 — 누적본을 갱신했고 직전본을 백업했습니다." + R["saved_note"])
@@ -609,6 +611,44 @@ def page_nyung():
                                mime="application/pdf", key="dl_pdf")
         else:
             d2.warning("PDF 변환 실패 — 서버에 libreoffice-writer 가 필요합니다. 워드는 정상입니다.")
+
+# ===== 미배정 입금 → 별칭 등록 =====
+def _alias_cust_options():
+    """지역별 거래처 목록. {지역: {표시라벨: 거래처명}}"""
+    opts = {"서울": {}, "화성": {}}
+    for loc, f, n in all_company_files():
+        nm = re.sub(r"^[^)]*\)\s*", "", n).rsplit(" (", 1)[0]
+        m = re.search(r"\((\d{3}-\d{2}-\d{5})\)", n)
+        opts.setdefault(loc, {})[f"{nm} ({m.group(1)})" if m else nm] = nm
+    return opts
+
+def _render_alias_editor(udf):
+    """미배정 입금자명마다 거래처를 지정 → _거래처별칭표.xlsx 에 저장 → chjk-data 반영."""
+    st.markdown("---")
+    st.markdown("**이 입금자명을 앞으로 자동 매칭시키기**")
+    st.caption("입금자명마다 거래처를 지정하면 별칭표에 저장되어, 다음 업로드부터 자동 매칭됩니다. "
+               "거래처 입금이 아니면(세금·이자·수수료 등) '제외'를 고르세요.")
+    opts = _alias_cust_options()
+    uniq = udf[["지역", "입금자명"]].drop_duplicates().reset_index(drop=True)
+    picks = {}
+    for i, row in uniq.iterrows():
+        loc = str(row["지역"]); nm = str(row["입금자명"])
+        labels = ["(지정 안 함)", "❌ 제외 (거래처 입금 아님)"] + sorted(opts.get(loc, {}).keys())
+        c1, c2 = st.columns([1, 2])
+        c1.markdown(f"<div style='padding-top:7px'><b>{loc}</b> · {nm}</div>", unsafe_allow_html=True)
+        sel = c2.selectbox("거래처", labels, index=0, key=f"alias_{loc}_{i}", label_visibility="collapsed")
+        if sel and sel != "(지정 안 함)":
+            picks[(loc, nm)] = "제외" if sel.startswith("❌") else opts[loc][sel]
+    if st.button(f"💾 별칭표에 저장 ({len(picks)}건)", type="primary", disabled=not picks, key="save_alias"):
+        try:
+            rows = [(loc, nm, tg) for (loc, nm), tg in picks.items()]
+            n = store.save_alias_rows(DATA, rows, DATA_ZIP)
+            saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "add deposit aliases")
+            st.success(f"{n}건을 별칭표에 저장했습니다." + ("" if saved else f" (저장소 반영 실패: {msg})"))
+            st.info("이번 미배정 건까지 반영하려면 같은 은행 파일을 다시 올려 처리하세요. "
+                    "이미 반영된 입금은 (거래일·금액) 기준으로 중복되지 않습니다.")
+        except Exception as e:
+            st.error(f"별칭 저장 실패: {e}")
 
 # ===== 자료 처리 페이지 =====
 def page_process():
