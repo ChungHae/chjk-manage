@@ -161,26 +161,26 @@ _LOGIN_CSS = """
 /* 세로 중앙 + 카드 폭 (검증된 선택자) */
 [data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:420px!important;padding:16px!important;margin:0 auto!important;min-height:100vh!important;display:flex!important;flex-direction:column!important;justify-content:center!important;}
 [data-testid='stMainBlockContainer'] [data-testid='stVerticalBlock']{flex:0 0 auto!important;}
-[data-testid='stForm']{border:1px solid rgba(26,26,26,.12)!important;border-radius:14px!important;box-shadow:0 10px 34px rgba(27,58,107,.10)!important;background:#fff!important;padding:0 22px 22px!important;}
+[data-testid='stForm']{border:1px solid #c8d2de!important;border-radius:0!important;box-shadow:0 14px 40px rgba(15,23,42,.16)!important;background:#fff!important;padding:0 20px 20px!important;}
 [data-testid='stForm'],[data-testid='stForm'] *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif!important;}
 [data-testid='stForm'] [data-testid='stVerticalBlock']{gap:.5rem!important;}
-.misu-auth-head{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:2px solid #1B3A6B;margin:0 -22px 16px;}
-.misu-auth-head img{height:34px;width:auto;display:block;}
-.misu-auth-head span{font-size:25px;line-height:34px;font-weight:600;color:#1B3A6B;letter-spacing:-.3px;}
+.misu-auth-head{display:flex;align-items:center;gap:12px;padding:16px 20px;background:#f4f6f9;border-bottom:1px solid #c8d2de;margin:0 -20px 18px;}
+.misu-auth-head img{height:32px;width:auto;display:block;}
+.misu-auth-head span{font-size:22px;line-height:32px;font-weight:700;color:#14305c;letter-spacing:-.3px;}
 .misu-auth-foot{text-align:center;font-size:11px;color:#9ca3af;margin-top:14px;}
 [data-testid='stForm'] [data-testid='stWidgetLabel']{margin-bottom:6px!important;}
-[data-testid='stForm'] [data-testid='stWidgetLabel'] p{font-size:13px!important;font-weight:600!important;color:#374151!important;}
+[data-testid='stForm'] [data-testid='stWidgetLabel'] p{font-size:12.5px!important;font-weight:600!important;color:#374151!important;}
 /* 입력창: 파란 배경은 stTextInputRootElement 에 있음 */
-[data-testid='stForm'] [data-testid='stTextInputRootElement']{background:#f7f9fc!important;border:1px solid rgba(26,26,26,.2)!important;border-radius:8px!important;}
-[data-testid='stForm'] [data-testid='stTextInputRootElement']:focus-within{border-color:#1B3A6B!important;background:#fff!important;}
+[data-testid='stForm'] [data-testid='stTextInputRootElement']{background:#fff!important;border:1px solid #c8d2de!important;border-radius:0!important;}
+[data-testid='stForm'] [data-testid='stTextInputRootElement']:focus-within{border-color:#14305c!important;background:#fff!important;box-shadow:inset 0 0 0 1px #14305c!important;}
 [data-testid='stForm'] [data-testid='stTextInput'] input{background:transparent!important;border:none!important;font-size:14px!important;padding:11px 12px!important;color:#111827!important;-webkit-text-fill-color:#111827!important;}
 [data-testid='stForm'] [data-testid='stTextInput'] input::placeholder{color:#9ca3af!important;}
 [data-testid='stForm'] [data-testid='stTextInput'] button{display:none!important;}
 [data-testid='stForm'] [data-testid='InputInstructions']{display:none!important;}
 /* 로그인 버튼 (전폭) */
 [data-testid='stFormSubmitButton']{width:100%!important;margin-top:10px!important;}
-[data-testid='stFormSubmitButton'] button{width:100%!important;background:#1B3A6B!important;border:1px solid #1B3A6B!important;border-radius:8px!important;padding:12px!important;min-height:auto!important;box-shadow:none!important;}
-[data-testid='stFormSubmitButton'] button:hover{background:#14305c!important;border-color:#14305c!important;}
+[data-testid='stFormSubmitButton'] button{width:100%!important;background:#14305c!important;border:1px solid #14305c!important;border-radius:0!important;padding:11px!important;min-height:auto!important;box-shadow:none!important;}
+[data-testid='stFormSubmitButton'] button:hover{background:#1B3A6B!important;border-color:#1B3A6B!important;}
 [data-testid='stFormSubmitButton'] button:focus{box-shadow:none!important;}
 [data-testid='stFormSubmitButton'] button p,[data-testid='stFormSubmitButton'] button div{color:#fff!important;font-weight:700!important;font-size:14px!important;}
 </style>
