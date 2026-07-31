@@ -300,7 +300,14 @@ def check_pw():
         if(_rt && _u && !S.getItem('misu_auto_tried')){
           S.setItem('misu_auto_tried','1');
           var _loc=window.parent.location;
-          _loc.replace(_loc.origin+_loc.pathname+'?sso='+encodeURIComponent(_rt)+'&u='+encodeURIComponent(_u)+(_at?('&at='+encodeURIComponent(_at)):''));
+          var _u2=_loc.origin+_loc.pathname+'?sso='+encodeURIComponent(_rt)+'&u='+encodeURIComponent(_u)+(_at?('&at='+encodeURIComponent(_at)):'');
+          // Streamlit 컴포넌트 iframe은 sandbox라 직접 이동 불가 → 부모 문서에 스크립트 주입(같은 출처라 허용)
+          try{
+            var _pd=window.parent.document;
+            var _sc=_pd.createElement('script');
+            _sc.textContent='location.replace('+JSON.stringify(_u2)+');';
+            (_pd.head||_pd.body).appendChild(_sc);
+          }catch(_ne){ try{ _loc.replace(_u2); }catch(_n2){} }
           return;
         }
       }catch(_ae){}
@@ -923,7 +930,7 @@ if st.session_state.get("uid"):
               + "fetch(" + json.dumps(_lo_url) + "+'?auth='+_tok).then(function(r){return r.ok?r.json():null;}).then(function(v){"
               + "if(typeof v==='number'){clearInterval(_lt);"
               + "try{var d=window.parent.document;d.cookie='misu_rt=;path=/;max-age=0';d.cookie='misu_uid=;path=/;max-age=0';d.cookie='misu_at=;path=/;max-age=0';var L=window.parent.localStorage;L.removeItem('misu_rt');L.removeItem('misu_uid');L.removeItem('misu_at');}catch(e){}"
-              + "window.parent.location.reload();}"
+              + "try{var _pd2=window.parent.document;var _sc2=_pd2.createElement('script');_sc2.textContent='location.reload();';(_pd2.head||_pd2.body).appendChild(_sc2);}catch(_e2){try{window.parent.location.reload();}catch(_e3){}}}"
               + "}).catch(function(){});"
               + "},5000);"
               + "</script>")
