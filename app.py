@@ -171,6 +171,8 @@ _LOGIN_CSS = """
 [data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:452px!important;padding:16px!important;margin:0 auto!important;min-height:100vh!important;display:flex!important;flex-direction:column!important;justify-content:center!important;}
 [data-testid='stMainBlockContainer'] [data-testid='stVerticalBlock']{flex:0 0 auto!important;}
 /* 카드 */
+@keyframes _misuFadeIn{to{opacity:1;}}
+[data-testid='stForm']{opacity:0;animation:_misuFadeIn .2s ease .45s forwards;}
 [data-testid='stForm']{border:1px solid #c8d2de!important;border-radius:0!important;box-shadow:0 14px 40px rgba(15,23,42,.16)!important;background:#fff!important;padding:0 20px 20px!important;}
 [data-testid='stForm'],[data-testid='stForm'] *{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif!important;}
 [data-testid='stIconMaterial'],span[data-testid='stIconMaterial'],button[aria-label='Show password'] span,button[aria-label='Hide password'] span{font-family:'Material Symbols Rounded','Material Symbols Outlined','Material Icons Rounded','Material Icons'!important;}
@@ -304,6 +306,10 @@ def check_pw():
           // Streamlit 컴포넌트 iframe은 sandbox라 직접 이동 불가 → 부모 문서에 스크립트 주입(같은 출처라 허용)
           try{
             var _pd=window.parent.document;
+            var _ov=_pd.createElement('div');
+            _ov.style.cssText='position:fixed;inset:0;z-index:2147483600;background:#fff;display:flex;align-items:center;justify-content:center;font-family:Pretendard,sans-serif;font-size:14px;color:#1B3A6B;font-weight:600';
+            _ov.textContent='자동 로그인 중\u2026';
+            _pd.body.appendChild(_ov);
             var _sc=_pd.createElement('script');
             _sc.textContent='location.replace('+JSON.stringify(_u2)+');';
             (_pd.head||_pd.body).appendChild(_sc);
