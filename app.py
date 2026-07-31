@@ -117,6 +117,11 @@ def _fb_login(uid, pw):
     st.session_state["_fb_ref"] = d.get("refreshToken")
     st.session_state["_fb_tok_at"] = _t.time()
     role = "admin" if uid in MISU_ADMIN_IDS else "view"
+    try:
+        import urllib.parse as _up2
+        requests.delete(_FB_DB_URL + "/" + _FB_PATH + "_logout/" + _up2.quote(uid, safe="") + ".json?auth=" + str(token), timeout=10)
+    except Exception:
+        pass
     return True, role, ""
 
 def _fb_id_token():
@@ -213,15 +218,14 @@ def _restore_session(rt, nm, at_ms=None):
         a = requests.get(_FB_DB_URL + "/" + _FB_PATH + "_authorized/" + str(fuid) + ".json?auth=" + str(tok), timeout=15)
         if not (a.status_code == 200 and a.json() is True): return False
         import time as _t
-        if at_ms is not None:
-            # 쿠키 복원: 업무관리에서 이 계정이 로그아웃한 시각과 대조 (로그아웃이 더 나중이면 거부)
-            try:
-                import urllib.parse as _up
-                lo = requests.get(_FB_DB_URL + "/" + _FB_PATH + "_logout/" + _up.quote(nm, safe="") + ".json?auth=" + str(tok), timeout=15)
-                if lo.status_code == 200 and isinstance(lo.json(), (int, float)) and lo.json() > at_ms:
-                    return False
-            except Exception:
-                pass
+        # 로그아웃 표식이 있으면 복원 거부 (표식은 로그인 성공 시 삭제됨 — 시계 차이와 무관)
+        try:
+            import urllib.parse as _up
+            lo = requests.get(_FB_DB_URL + "/" + _FB_PATH + "_logout/" + _up.quote(nm, safe="") + ".json?auth=" + str(tok), timeout=15)
+            if lo.status_code == 200 and isinstance(lo.json(), (int, float)):
+                return False
+        except Exception:
+            pass
         st.session_state["_fb_tok"] = tok
         st.session_state["_fb_ref"] = j.get("refresh_token", rt)
         st.session_state["_fb_tok_at"] = _t.time()
@@ -917,7 +921,7 @@ if st.session_state.get("uid"):
               + "var _tok=" + json.dumps(st.session_state.get("_fb_tok","")) + ";"
               + "var _lt=setInterval(function(){"
               + "fetch(" + json.dumps(_lo_url) + "+'?auth='+_tok).then(function(r){return r.ok?r.json():null;}).then(function(v){"
-              + "if(typeof v==='number'&&_at&&v>_at){clearInterval(_lt);"
+              + "if(typeof v==='number'){clearInterval(_lt);"
               + "try{var d=window.parent.document;d.cookie='misu_rt=;path=/;max-age=0';d.cookie='misu_uid=;path=/;max-age=0';d.cookie='misu_at=;path=/;max-age=0';var L=window.parent.localStorage;L.removeItem('misu_rt');L.removeItem('misu_uid');L.removeItem('misu_at');}catch(e){}"
               + "window.parent.location.reload();}"
               + "}).catch(function(){});"
