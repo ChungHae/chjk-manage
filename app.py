@@ -235,15 +235,20 @@ def _try_sso_login():
     """업무관리 시스템에서 '입금매칭 앱 열기'로 넘어온 경우: URL의 토큰으로 즉시 로그인."""
     try:
         rt = st.query_params.get("sso"); nm = st.query_params.get("u")
+        at = st.query_params.get("at")
     except Exception:
         return False
     if not rt or not nm: return False
-    ok = _restore_session(rt, str(nm).strip())
+    try: at_ms = int(at) if at else None
+    except Exception: at_ms = None
+    ok = _restore_session(rt, str(nm).strip(), at_ms=at_ms)
     try:
         del st.query_params["sso"]
         del st.query_params["u"]
     except Exception:
         pass
+    try: del st.query_params["at"]
+    except Exception: pass
     return ok
 
 def _try_cookie_login():
@@ -284,6 +289,17 @@ def check_pw():
     tries++;
     try{
       var d=window.parent.document;
+      // 자동 로그인 복원: localStorage 토큰 → SSO 주소로 이동 (탭 세션당 1회만 시도)
+      try{
+        var L=window.parent.localStorage, S=window.parent.sessionStorage;
+        var _rt=L.getItem('misu_rt'), _u=L.getItem('misu_uid'), _at=L.getItem('misu_at');
+        if(_rt && _u && !S.getItem('misu_auto_tried')){
+          S.setItem('misu_auto_tried','1');
+          var _loc=window.parent.location;
+          _loc.replace(_loc.origin+_loc.pathname+'?sso='+encodeURIComponent(_rt)+'&u='+encodeURIComponent(_u)+(_at?('&at='+encodeURIComponent(_at)):''));
+          return;
+        }
+      }catch(_ae){}
       var last=window.parent.localStorage.getItem('misu_last_user')||'';
       var inputs=d.querySelectorAll("[data-testid='stForm'] input");
       if(inputs.length>=2){
@@ -894,6 +910,7 @@ if st.session_state.get("uid"):
               + "d.cookie='misu_rt='+encodeURIComponent(" + json.dumps(st.session_state.get("_fb_ref","")) + ")+';path=/;max-age=2592000;SameSite=Lax';"
               + "d.cookie='misu_uid='+encodeURIComponent(" + json.dumps(st.session_state.get("uid","")) + ")+';path=/;max-age=2592000;SameSite=Lax';"
               + "d.cookie='misu_at=" + str(int(st.session_state.get("_login_at_ms") or 0)) + ";path=/;max-age=2592000;SameSite=Lax';"
+              + "try{var L=window.parent.localStorage;L.setItem('misu_rt'," + json.dumps(st.session_state.get("_fb_ref","")) + ");L.setItem('misu_uid'," + json.dumps(st.session_state.get("uid","")) + ");L.setItem('misu_at','" + str(int(st.session_state.get("_login_at_ms") or 0)) + "');window.parent.sessionStorage.removeItem('misu_auto_tried');}catch(_l){}"
               + "}catch(e){}"
               # 실시간 로그아웃 감지: 5초마다 로그아웃 기록(수 바이트)만 확인
               + "var _at=" + str(int(st.session_state.get("_login_at_ms") or 0)) + ";"
@@ -901,7 +918,7 @@ if st.session_state.get("uid"):
               + "var _lt=setInterval(function(){"
               + "fetch(" + json.dumps(_lo_url) + "+'?auth='+_tok).then(function(r){return r.ok?r.json():null;}).then(function(v){"
               + "if(typeof v==='number'&&_at&&v>_at){clearInterval(_lt);"
-              + "try{var d=window.parent.document;d.cookie='misu_rt=;path=/;max-age=0';d.cookie='misu_uid=;path=/;max-age=0';d.cookie='misu_at=;path=/;max-age=0';}catch(e){}"
+              + "try{var d=window.parent.document;d.cookie='misu_rt=;path=/;max-age=0';d.cookie='misu_uid=;path=/;max-age=0';d.cookie='misu_at=;path=/;max-age=0';var L=window.parent.localStorage;L.removeItem('misu_rt');L.removeItem('misu_uid');L.removeItem('misu_at');}catch(e){}"
               + "window.parent.location.reload();}"
               + "}).catch(function(){});"
               + "},5000);"
