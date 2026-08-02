@@ -477,8 +477,9 @@ _HDR_JS = r"""
       setTimeout(function(){ updActive(); }, 1500);
       return;
     }
-    var u = baseUrl();
-    if(target) u = u.replace(/\/$/,'') + '/' + target;
+    var u = baseUrl().replace(/\/$/,'');
+    // 홈(미수현황)은 반드시 끝 빗금 포함 — Streamlit Cloud 내부 경로(/~/+)는 빗금 없으면 플랫폼 오류
+    u = target ? (u + '/' + target) : (u + '/');
     try{ location.href = u; }catch(e){}
   }
   function clearLocal(){
