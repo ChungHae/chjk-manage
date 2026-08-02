@@ -216,9 +216,11 @@ _HDR_CSS = """
 @font-face{font-family:'Pretendard';font-weight:400;font-style:normal;src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2') format('woff2');font-display:swap;}
 @font-face{font-family:'Pretendard';font-weight:600;font-style:normal;src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2') format('woff2');font-display:swap;}
 @font-face{font-family:'Pretendard';font-weight:700;font-style:normal;src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2') format('woff2');font-display:swap;}
-/* 네이티브 상단 네비 숨김 (DOM은 남겨서 프로그램적 클릭 가능) */
-header[data-testid="stHeader"]{display:none!important;}
-[data-testid="stTopNav"]{display:none!important;}
+/* 네이티브 상단 네비: 화면 밖으로 숨기되 폭은 유지 (DOM·링크 보존 → 프로그램적 SPA 클릭 가능).
+   display:none이면 최신 Streamlit(운영)이 네비를 '3 more' 팝업으로 접어 링크가 DOM에서 사라져
+   탭 전환이 전체 리로드로 떨어짐 → 오프스크린 방식 필수 */
+header[data-testid="stHeader"]{position:fixed!important;top:-300px!important;left:0!important;width:1600px!important;max-width:none!important;display:block!important;visibility:hidden!important;pointer-events:none!important;z-index:-1!important;}
+[data-testid="stTopNav"]{visibility:hidden!important;}
 /* 기존 모바일 CSS가 사이드바 네비를 상단바로 꺼내던 것을 덮어쓰기 — 커스텀 탭이 전 해상도 담당 */
 @media (max-width: 768px){
   [data-testid="stSidebarNav"]{display:none!important;}
