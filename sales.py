@@ -244,8 +244,7 @@ def render(data_dir, admin=False, template_path=None, basis_iso=None):
             label = ""
     if not label:
         label = _basis_label(data)
-    badge = ("<div style='margin:-10px 0 8px'><span style='background:#1B3A6B;color:#fff;font-size:12px;"
-             "font-weight:600;padding:3px 12px;border-radius:6px'>🔑 관리자 계정</span></div>") if admin else ""
+    badge = ""  # 관리자 계정 배지 표시 제거(사용자 요청, 2026-07-31)
     return (tpl.replace("@@DATA@@", json.dumps(data, ensure_ascii=False))
                .replace("@@SBASIS@@", label)
                .replace("@@ADMINBADGE@@", badge))

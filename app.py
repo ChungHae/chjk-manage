@@ -6,9 +6,9 @@ import pandas as pd
 from openpyxl import load_workbook
 import pipeline, store
 
-st.set_page_config(page_title="충해전기 관리시스템", page_icon="📒", layout="wide")
+st.set_page_config(page_title="입출금 관리 시스템", page_icon="📒", layout="wide")
 import streamlit.components.v1 as _components
-_components.html("<script>window.parent.document.title='충해전기 관리시스템';</script>", height=0)
+_components.html("<script>window.parent.document.title='입출금 관리 시스템';</script>", height=0)
 st.markdown("<style>[data-testid='stMain']{scrollbar-gutter:stable;}.block-container{max-width:1320px;margin:0 auto;padding-top:1.4rem;padding-left:3rem;padding-right:3rem;}@media(max-width:640px){.block-container{padding-left:0.7rem!important;padding-right:0.7rem!important;}}</style><style>iframe[height='0']{display:none;}.st-key-nytrig{position:fixed!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;overflow:hidden!important;}a[href$='page_nyung'],[data-testid='stTopNavLink'][href$='page_nyung'],[data-testid='stTopNavLinkContainer']:has(a[href$='page_nyung']),li:has(a[href$='page_nyung']),[data-testid='stSidebarNavItems'] li:has(a[href$='page_nyung']){display:none!important;}</style>", unsafe_allow_html=True)
 st.markdown("""<style>
 /* 작은 화면(≤768px)에서 Streamlit은 상단 탭 대신 네비게이션을 사이드바(햄버거)로 옮긴다.
@@ -32,7 +32,7 @@ st.markdown("""<style>
   [data-testid="stSidebarNavItems"] li, [data-testid="stSidebarNavLinkContainer"]{ width:auto !important; margin:0 !important; }
   [data-testid="stSidebarNavLink"]{
     width:auto !important; padding:5px 10px !important; white-space:nowrap !important;
-    border:1px solid #e0e6ee !important; border-radius:7px !important;
+    border:1px solid #e0e6ee !important; border-radius:0 !important;
   }
   [data-testid="stExpandSidebarButton"]{ display:none !important; }
   /* 상단의 숨은 주입용 요소(height=0 iframe·<style> 마크다운)가 세로 gap을 먹어 로고까지 공백이 큼 → 접기 */
@@ -69,15 +69,14 @@ def basis_date():
     except Exception: return None
 
 def header(full=True, title=None):
-    title = title or ("미수관리 시스템" if full else "관리 시스템")
+    # 과거 페이지 내 헤더(로고·제목) 제거(사용자 요청, 2026-07-31) — 기준일 표시만 그 자리에 유지
     bd = basis_date()
-    sub = f"현재 자료: {bd.year}년 {bd.month}월 {bd.day}일 기준" if (full and bd) else ""
-    st.markdown(
-        f"<div class='pg-hdr' style='display:flex;align-items:center;gap:18px;border-bottom:2px solid {NAVY};padding-bottom:12px;margin:6px 0 16px;'>"
-        f"<img class='pg-hdr-logo' src='{LOGO}' style='height:52px;width:auto;object-fit:contain;' onerror=\"this.style.display='none'\">"
-        f"<div><div class='pg-hdr-title' style='font-size:22px;font-weight:600;color:{NAVY};line-height:1.25;'>{title}</div>"
-        f"<div class='pg-hdr-sub' style='font-size:12px;letter-spacing:2px;color:#888;'>{sub}</div></div></div>",
-        unsafe_allow_html=True)
+    if full and bd:
+        # 업무관리 가격확인 '가격표 갱신일' 표기와 동일: 11px #6b7280, 라벨만 굵게 #334155
+        st.markdown(
+            f"<div class='pg-hdr' style='font-size:11px;color:#6b7280;letter-spacing:normal;margin:0 0 14px;'>"
+            f"<b style='color:#334155;white-space:nowrap;'>현재 자료</b>&nbsp;&nbsp;{bd.year}년 {bd.month}월 {bd.day}일 기준</div>",
+            unsafe_allow_html=True)
 
 # ── 업무관리 앱과 로그인 공유 (동일 Firebase 계정) ──
 _FB_API_KEY = "AIzaSyBTYey9GzRIRRqiiZoQ3gpxI-Ty1BhXyZU"
@@ -207,6 +206,409 @@ _LOGIN_CSS = """
 [data-testid='stFormSubmitButton'] button:focus{box-shadow:none!important;}
 [data-testid='stFormSubmitButton'] button p,[data-testid='stFormSubmitButton'] button div{color:#fff!important;font-weight:700!important;font-size:14px!important;line-height:16px!important;}
 </style>
+"""
+
+# ── 커스텀 상단 헤더+페이지 탭 (업무관리 시스템과 동일 디자인) ──
+# CSS: 업무관리 test_index.html 의 .header/.top-frozen/.brand-logo/.header h1/.header-right,
+#      .page-nav/.page-tab, .user-chip 수치를 그대로 복제 (클래스명만 misu- 접두사)
+_HDR_CSS = """
+<style>
+@font-face{font-family:'Pretendard';font-weight:400;font-style:normal;src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Pretendard';font-weight:600;font-style:normal;src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-SemiBold.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Pretendard';font-weight:700;font-style:normal;src:url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2') format('woff2');font-display:swap;}
+/* 네이티브 상단 네비 숨김 (DOM은 남겨서 프로그램적 클릭 가능) */
+header[data-testid="stHeader"]{display:none!important;}
+[data-testid="stTopNav"]{display:none!important;}
+/* 기존 모바일 CSS가 사이드바 네비를 상단바로 꺼내던 것을 덮어쓰기 — 커스텀 탭이 전 해상도 담당 */
+@media (max-width: 768px){
+  [data-testid="stSidebarNav"]{display:none!important;}
+}
+/* ── 헤더 (.top-frozen + .header) ── */
+/* 창 스크롤 구조로 전환: 업무관리처럼 브라우저 창 자체가 스크롤 (스크롤바가 헤더 옆 전체 높이 차지) */
+html{overflow-y:scroll!important;}
+.stApp,[data-testid="stAppViewContainer"]{position:static!important;height:auto!important;min-height:0!important;overflow:visible!important;}
+section[data-testid="stMain"]{height:auto!important;overflow:visible!important;}
+#misu-topbar{position:fixed;top:0;left:0;right:0;width:100%;z-index:999;background:#fff;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;font-size:14px;color:#1a1a1a;line-height:normal;-webkit-font-smoothing:auto;}
+#misu-topbar *{line-height:normal;}
+#misu-topbar *{box-sizing:border-box;}
+.misu-header{background:#f4f6f9;border-bottom:1px solid #c8d2de;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;min-height:53px;line-height:normal!important;}
+.misu-header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:normal!important;}
+.misu-brand-logo{height:30px;width:auto;display:block;}
+.misu-header-title{font-size:16px;font-weight:700;letter-spacing:-0.3px;color:#1a1a1a;display:inline-flex;align-items:center;margin:0;padding:0;line-height:normal;}
+.misu-header-title::before{content:'';width:4px;height:16px;background:#14305c;border-radius:0;margin-right:9px;}
+.misu-user-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 12px;border-radius:999px;background:#eaf1fb;border:1px solid #cfe0f7;color:#1b3a6b;font-size:12px;font-weight:700;white-space:nowrap;line-height:normal!important;}
+.misu-user-chip button{border:none;background:none;color:#3a5d8f;cursor:pointer;font-size:11px;font-weight:700;padding:0 0 0 8px;border-left:1px solid #cfe0f7;margin-left:2px;font-family:inherit;line-height:normal;}
+.misu-user-chip button:hover{color:#14305c;text-decoration:underline;}
+.misu-header-right{display:flex;align-items:center;gap:6px;}
+#misu-header-date{font-size:13px;font-weight:600;color:#374151;white-space:nowrap;line-height:normal!important;}
+#misu-export-btn{padding:6px 12px;border-radius:0;border:1px solid #c8d2de;background:#fff;color:#334155;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:background .12s,border-color .12s;line-height:1.4!important;white-space:nowrap;}
+#misu-export-btn:hover{background:#eef2f6;border-color:#9fb0c8;}
+/* 동기화 상태 알약 — 업무관리 #syncStatus 인라인 스타일 그대로 */
+#misu-sync-status{font-size:12px;padding:4px 12px;border-radius:999px;border:none;background:#f3f4f6;color:#9ca3af;font-weight:700;cursor:default;user-select:none;white-space:nowrap;line-height:normal!important;}
+@media (max-width: 768px){ #misu-header-date{font-size:12px;} #misu-sync-status{font-size:11px;padding:3px 8px;} }
+/* ── 페이지 탭 (.page-nav / .page-tab) ── */
+.misu-page-nav{background:#fff;border-bottom:1px solid #eef1f4;padding:7px 16px;display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;line-height:normal!important;}
+.misu-page-nav::-webkit-scrollbar{display:none;}
+.misu-page-tab{padding:7px 14px;font-size:13px;white-space:nowrap;flex-shrink:0;font-weight:500;color:#8a94a6;cursor:pointer;border:none;border-left:3px solid transparent;border-radius:0;transition:all .12s;background:transparent;font-family:inherit;line-height:normal!important;}
+.misu-page-tab:hover{background:#f6f8fa;color:#334155;}
+.misu-page-tab.active{color:#0f172a;background:#eef2f6;border-left-color:#334155;font-weight:700;}
+/* ── 헤더-본문 간격: 업무관리 .main(padding 20px, ≤1024px 14px, ≤700px 10px)과 동일 ──
+   높이 0 주입용 요소(iframe·style 마크다운)의 컨테이너가 세로 gap(1rem씩)을 차지해
+   간격이 벌어지므로 전 해상도에서 접는다(display:none이어도 <style>·iframe 스크립트는 동작). */
+[data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(iframe[scrolling="no"]),
+[data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] style){display:none!important;}
+[data-testid="stMainBlockContainer"]{padding-top:0!important;}
+</style>
+"""
+
+# ── 전역 Streamlit 위젯 스타일 (업무관리 디자인 시스템 기준서) ──
+# 원칙: radius 0(일반 입력만 8px), Pretendard, focus 글로우 금지(테두리색 변경만),
+#       색 의미 체계: 다운로드/저장 #1B3A6B · 업로드/불러오기 #15803d · 삭제/위험 #dc2626.
+# 로그인 카드(_LOGIN_CSS)·비밀번호 변경(_PW_CSS)은 이 블록보다 나중에 주입되므로 그 화면 스타일은 그대로 유지된다.
+_WIDGET_CSS = """
+<style>
+/* ── 글꼴: 본문 전체 Pretendard (아이콘 폰트·코드 블록 예외) ── */
+.stApp,.stApp p,.stApp div,.stApp span,.stApp label,.stApp td,.stApp th,
+.stApp input,.stApp button,.stApp select,.stApp textarea{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;}
+.stApp [data-testid="stIconMaterial"],.stApp span[data-testid="stIconMaterial"]{font-family:'Material Symbols Rounded','Material Symbols Outlined','Material Icons Rounded','Material Icons'!important;}
+.stApp code,.stApp pre,.stApp code span,.stApp pre span{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace!important;}
+/* ── 페이지 내 소제목: 남색 4px 세로바 규칙 ── */
+.misu-sec-title{display:flex;align-items:center;font-size:15px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;margin:2px 0 8px;}
+.misu-sec-title::before{content:'';width:4px;height:15px;background:#14305c;margin-right:8px;flex:none;}
+/* ── 위젯 라벨: 로그인 카드와 동일 규격(12.5px/600 #374151) ── */
+.stApp [data-testid="stWidgetLabel"] p{font-size:12.5px!important;font-weight:600!important;color:#374151!important;}
+/* ── 버튼: 기본(흰 배경+#c8d2de 테두리+13px #334155) / primary(#1B3A6B→hover #14305c) ── */
+.stApp .stButton button,.stApp .stDownloadButton button,.stApp [data-testid="stFormSubmitButton"] button{
+  border-radius:0!important;border:1px solid #c8d2de!important;background:#fff!important;color:#334155!important;
+  padding:6px 12px!important;min-height:0!important;box-shadow:none!important;font-family:inherit!important;
+  transition:background .12s,border-color .12s!important;}
+.stApp .stButton button p,.stApp .stDownloadButton button p,.stApp [data-testid="stFormSubmitButton"] button p{
+  font-size:13px!important;font-weight:600!important;line-height:1.4!important;color:inherit!important;}
+.stApp .stButton button:hover,.stApp .stDownloadButton button:hover{background:#eef2f6!important;border-color:#9fb0c8!important;}
+.stApp .stButton button:focus,.stApp .stButton button:focus-visible,
+.stApp .stDownloadButton button:focus,.stApp .stDownloadButton button:focus-visible{box-shadow:none!important;outline:none!important;}
+.stApp button[kind="primary"],.stApp button[kind="primaryFormSubmit"]{background:#1B3A6B!important;border-color:#1B3A6B!important;color:#fff!important;}
+.stApp button[kind="primary"]:hover,.stApp button[kind="primaryFormSubmit"]:hover{background:#14305c!important;border-color:#14305c!important;}
+.stApp button[kind="primary"] p,.stApp button[kind="primaryFormSubmit"] p{color:#fff!important;}
+.stApp .stButton button:disabled,.stApp .stDownloadButton button:disabled{opacity:.55!important;cursor:not-allowed!important;}
+/* 다운로드 계열 = 네이비 채움 (기준서 자동 색칠 규칙: 저장·다운로드·받기 → #1B3A6B) */
+.stApp .stDownloadButton button,.stApp [data-testid="stDownloadButton"] button{background:#1B3A6B!important;border-color:#1B3A6B!important;color:#fff!important;}
+.stApp .stDownloadButton button:hover,.stApp [data-testid="stDownloadButton"] button:hover{background:#14305c!important;border-color:#14305c!important;}
+.stApp .stDownloadButton button p{color:#fff!important;}
+/* 파괴적 확인 버튼(직전본 복구 실행) = 빨강 (기준서 confirm OK 기본색 #dc2626) */
+.stApp .st-key-do_restore button{background:#dc2626!important;border-color:#dc2626!important;}
+.stApp .st-key-do_restore button:hover{background:#b91c1c!important;border-color:#b91c1c!important;}
+/* ── 입력: 1.5px #e5e5e5 · radius 0(각진화) · focus 테두리 #1B3A6B만(글로우 금지) ── */
+.stApp [data-testid="stTextInputRootElement"],.stApp [data-testid="stNumberInputContainer"]{
+  border:1.5px solid #e5e5e5!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;}
+.stApp [data-testid="stTextInputRootElement"]:focus-within,.stApp [data-testid="stNumberInputContainer"]:focus-within{
+  border-color:#1B3A6B!important;box-shadow:none!important;}
+.stApp [data-testid="stTextInput"] input,.stApp [data-testid="stNumberInput"] input{
+  border:none!important;background:transparent!important;font-size:13px!important;color:#1a1a1a!important;padding:8px 11px!important;box-shadow:none!important;}
+.stApp [data-testid="stTextInput"] input::placeholder,.stApp [data-testid="stNumberInput"] input::placeholder,
+.stApp [data-baseweb="select"] input::placeholder{color:#aab4c2!important;}
+.stApp [data-testid="stTextArea"] div[data-baseweb="textarea"]{border:1.5px solid #e5e5e5!important;border-radius:0!important;box-shadow:none!important;}
+.stApp [data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within{border-color:#1B3A6B!important;}
+.stApp [data-testid="stTextArea"] textarea{font-size:13px!important;color:#1a1a1a!important;}
+.stApp [data-testid="stSelectbox"] div[data-baseweb="select"]>div:first-child,
+.stApp [data-testid="stDateInput"] div[data-baseweb="input"]{
+  border:1.5px solid #e5e5e5!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;font-size:13px!important;color:#1a1a1a!important;}
+.stApp [data-testid="stSelectbox"] div[data-baseweb="select"]>div:first-child:focus-within,
+.stApp [data-testid="stSelectbox"] div[data-baseweb="select"][aria-expanded="true"]>div:first-child,
+.stApp [data-testid="stDateInput"] div[data-baseweb="input"]:focus-within{border-color:#1B3A6B!important;box-shadow:none!important;}
+.stApp [data-testid="stSelectbox"] div[data-baseweb="select"] div{font-size:13px;}
+/* 셀렉트 드롭다운(각진화: radius 0 + 그림자 0 4px 16px, 항목 hover #f4f8fe/#14305c) */
+div[data-baseweb="popover"] [role="listbox"]{border:1px solid #d6e4f5!important;border-radius:0!important;box-shadow:0 4px 16px rgba(0,0,0,.10)!important;
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif!important;}
+div[data-baseweb="popover"] li[role="option"]{font-size:13px!important;color:#1a1a1a!important;}
+div[data-baseweb="popover"] li[role="option"]:hover,div[data-baseweb="popover"] li[aria-selected="true"]{background:#f4f8fe!important;color:#14305c!important;}
+/* ── 라디오·체크: 테두리 #c8d2de, 선택 시 네이비 (테마 적색 제거) ── */
+.stApp label[data-baseweb="radio"] div p{font-size:13px!important;color:#1a1a1a!important;}
+.stApp label[data-baseweb="radio"]>div:first-of-type{border-color:#c8d2de!important;}
+.stApp label[data-baseweb="radio"]:has(input:checked)>div:first-of-type{background:#1B3A6B!important;border-color:#1B3A6B!important;}
+.stApp label[data-baseweb="checkbox"]:has(input:checked) span:first-of-type{background:#1B3A6B!important;border-color:#1B3A6B!important;}
+/* ── 파일 업로더: 각진 카드 + 점선(기준서 2.10 점선 추가 버튼 관행), 버튼은 그린(#15803d 업로드 계열) ── */
+.stApp [data-testid="stFileUploaderDropzone"]{background:#fff!important;border:1.5px dashed #aac4e6!important;border-radius:0!important;box-shadow:none!important;}
+.stApp [data-testid="stFileUploaderDropzone"]:hover{background:#f4f8fe!important;}
+.stApp [data-testid="stFileUploaderDropzone"] button{background:#15803d!important;border:1px solid #15803d!important;color:#fff!important;
+  border-radius:0!important;box-shadow:none!important;font-family:inherit!important;font-size:13px!important;font-weight:600!important;}
+.stApp [data-testid="stFileUploaderDropzone"] button:hover{background:#136b34!important;border-color:#136b34!important;}
+.stApp [data-testid="stFileUploaderDropzone"] small,.stApp [data-testid="stFileUploaderDropzoneInstructions"] span{color:#888!important;}
+.stApp [data-testid="stFileUploaderFile"]{border-radius:0!important;font-size:13px!important;}
+/* ── expander: schedule-wrap 규격(흰 배경, 1px #d6deea, radius 0), 헤더 13px/700 ── */
+.stApp [data-testid="stExpander"] details{border:1px solid #d6deea!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;}
+.stApp [data-testid="stExpander"] summary{padding:10px 14px!important;}
+.stApp [data-testid="stExpander"] summary:hover{color:#14305c!important;}
+.stApp [data-testid="stExpander"] summary p{font-size:13px!important;font-weight:700!important;color:#1a1a1a!important;}
+/* ── 표(st.dataframe): 외곽만 CSS로 통일(셀 내부는 캔버스 렌더러라 CSS 불가) ── */
+.stApp [data-testid="stDataFrame"]{border:1px solid #d6deea!important;border-radius:0!important;}
+.stApp [data-testid="stDataFrame"]>div,.stApp [data-testid="stDataFrame"] [data-testid="stDataFrameResizable"]{border-radius:0!important;}
+.stApp [data-testid="stTable"] table{border-collapse:collapse!important;font-size:13px!important;}
+.stApp [data-testid="stTable"] th{background:#fafafa!important;font-size:12px!important;font-weight:500!important;color:#888!important;border-bottom:1px solid #e5e5e5!important;}
+.stApp [data-testid="stTable"] td{border-bottom:1px solid #f0f0f0!important;}
+/* ── 상태 알림(info/success/warning/error): 기준서 상태색, radius 0 ── */
+.stApp [data-testid="stAlert"] div[data-baseweb="notification"]{border-radius:0!important;border:none!important;}
+.stApp [data-testid="stAlert"] [data-testid="stMarkdownContainer"] p{font-size:13px!important;color:inherit!important;}
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentInfo"]) div[data-baseweb="notification"]{background:#EAF1FB!important;color:#14305c!important;}
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentSuccess"]) div[data-baseweb="notification"]{background:#eafaf1!important;color:#15803d!important;}
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) div[data-baseweb="notification"]{background:#fbede3!important;color:#b45309!important;}
+.stApp [data-testid="stAlert"]:has([data-testid="stAlertContentError"]) div[data-baseweb="notification"]{background:#fdecea!important;color:#dc2626!important;}
+/* ── 진행바·스피너·토스트: 채움 #1B3A6B, 배경 #d6e4f5 (기준서 진행률 규격) ── */
+.stApp .stProgress>div>div>div{background:#d6e4f5!important;border-radius:99px!important;}
+.stApp .stProgress>div>div>div>div{background:#1B3A6B!important;border-radius:99px!important;}
+.stApp [data-testid="stSpinner"] i{border-color:#1B3A6B #d6e4f5 #d6e4f5!important;}
+.stApp [data-testid="stSpinner"] p{font-size:13px!important;color:#9ca3af!important;}
+[data-testid="stToast"]{border-radius:0!important;border:1px solid #c8d2de!important;background:#fff!important;color:#1a1a1a!important;
+  box-shadow:0 4px 16px rgba(0,0,0,.10)!important;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif!important;}
+[data-testid="stToast"] p,[data-testid="stToast"] div{font-family:inherit!important;font-size:13px!important;}
+/* ── caption·구분선 정돈 ── */
+.stApp [data-testid="stCaptionContainer"] p{font-size:12px!important;color:#888!important;}
+.stApp hr{border-color:#e5e5e5!important;}
+</style>
+"""
+
+# 부모 문서에 1회 주입되는 스크립트 — 헤더+탭 DOM 생성, 탭 클릭→숨은 네이티브 네비 클릭,
+# active 토글, 로그아웃(Firebase 표식 PUT + 쿠키/localStorage 정리 + 리로드).
+# 부모 문서 안에서 실행되므로 location 이동/리로드가 sandbox 제약 없이 동작한다.
+_HDR_JS = r"""
+(function(){
+  if(window.__misuHdrInit) return;
+  window.__misuHdrInit = true;
+  var TABS = [
+    {key:'',        label:'미수 현황'},
+    {key:'sales',   label:'매출 현황'},
+    {key:'process', label:'자료 처리'}
+  ];
+  function host(){
+    return document.querySelector('section[data-testid="stMain"]')
+        || document.querySelector('.stMain')
+        || document.querySelector('[data-testid="stAppViewContainer"]')
+        || document.body;
+  }
+  function updDate(){
+    var el = document.getElementById('misu-header-date');
+    if(!el) return;
+    var d = new Date();
+    var dn = ['일','월','화','수','목','금','토'][d.getDay()];
+    el.textContent = d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일 ' + dn + '요일';
+  }
+  function updSync(stt){
+    // 업무관리 setSyncStatus 상태표(문구·글색·배경·점색) 그대로 복제
+    var el = document.getElementById('misu-sync-status');
+    if(!el) return;
+    var MAP = {
+      local:      ['로컬',   '#9ca3af', '#f3f4f6', '#c4c9d0'],
+      connecting: ['연결 중', '#3a5d8f', '#f4f8fe', '#f59e0b'],
+      connected:  ['동기화',  '#1b3a6b', '#f4f8fe', '#22c55e'],
+      error:      ['오류',    '#dc2626', '#fef2f2', '#ef4444']
+    };
+    var m = MAP[stt] || MAP.local;
+    el.innerHTML = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + m[3] + ';margin-right:6px;vertical-align:middle"></span>' + m[0];
+    el.style.color = m[1];
+    el.style.background = m[2];
+  }
+  function goPw(){
+    // 비밀번호 변경 화면으로: 쿼리 파라미터 이동 (이 스크립트는 부모 문서에서 실행되므로 직접 이동 가능)
+    try{ location.href = location.origin + location.pathname + '?pw=1'; }catch(e){}
+  }
+  function goExport(){
+    try{ location.href = location.origin + location.pathname + '?export=1'; }catch(e){}
+  }
+  function curKey(){
+    var p = location.pathname.replace(/\/+$/,'');
+    if(/\/sales$/.test(p)) return 'sales';
+    if(/\/process$/.test(p)) return 'process';
+    return '';
+  }
+  function updActive(k){
+    if(k === undefined || k === null) k = curKey();
+    var tabs = document.querySelectorAll('.misu-page-tab');
+    for(var i=0;i<tabs.length;i++){
+      if((tabs[i].getAttribute('data-target')||'') === k) tabs[i].classList.add('active');
+      else tabs[i].classList.remove('active');
+    }
+  }
+  function natLinks(){
+    var sels = ['[data-testid="stTopNav"] a[href]','a[data-testid="stTopNavLink"]',
+                '[data-testid="stSidebarNav"] a[href]','a[data-testid="stSidebarNavLink"]',
+                'header[data-testid="stHeader"] a[href]'];
+    var out = [];
+    for(var i=0;i<sels.length;i++){
+      var ls = document.querySelectorAll(sels[i]);
+      for(var j=0;j<ls.length;j++){ if(out.indexOf(ls[j]) === -1) out.push(ls[j]); }
+    }
+    return out;
+  }
+  function linkPath(a){
+    try{ return new URL(a.href).pathname.replace(/\/+$/,''); }catch(e){ return ''; }
+  }
+  function findNative(target, label){
+    var links = natLinks(), i, p;
+    if(target){
+      for(i=0;i<links.length;i++){
+        p = linkPath(links[i]);
+        if(p.slice(-(target.length+1)) === '/' + target) return links[i];
+      }
+    }
+    if(label){
+      for(i=0;i<links.length;i++){
+        if((links[i].textContent||'').indexOf(label) !== -1) return links[i];
+      }
+    }
+    if(!target){
+      for(i=0;i<links.length;i++){
+        p = linkPath(links[i]);
+        if(!/\/(sales|process|page_nyung)$/.test(p)) return links[i];
+      }
+    }
+    return null;
+  }
+  function baseUrl(){
+    var p = location.pathname.replace(/\/(sales|process|page_nyung)\/?$/,'');
+    if(p === '') p = '/';
+    return location.origin + p;
+  }
+  function navTo(target, label){
+    updActive(target);
+    var a = findNative(target, label);
+    if(a){
+      try{ a.click(); }catch(e){}
+      setTimeout(function(){ updActive(); }, 500);
+      setTimeout(function(){ updActive(); }, 1500);
+      return;
+    }
+    var u = baseUrl();
+    if(target) u = u.replace(/\/$/,'') + '/' + target;
+    try{ location.href = u; }catch(e){}
+  }
+  function clearLocal(){
+    try{
+      document.cookie = 'misu_rt=;path=/;max-age=0';
+      document.cookie = 'misu_uid=;path=/;max-age=0';
+      document.cookie = 'misu_at=;path=/;max-age=0';
+    }catch(e){}
+    try{ var L = window.localStorage; L.removeItem('misu_rt'); L.removeItem('misu_uid'); L.removeItem('misu_at'); }catch(e){}
+    try{ window.sessionStorage.removeItem('misu_auto_tried'); }catch(e){}
+  }
+  function doLogout(){
+    var cfg = window.__misuHdrCfg || {};
+    var btn = document.getElementById('misu-logout-btn');
+    if(btn) btn.disabled = true;
+    var done = false;
+    var fin = function(){ if(done) return; done = true; clearLocal(); try{ location.reload(); }catch(e){} };
+    setTimeout(fin, 4000);
+    if(cfg.loUrl && cfg.tok){
+      try{
+        fetch(cfg.loUrl + '?auth=' + encodeURIComponent(cfg.tok),
+              {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Date.now())})
+          .then(fin, fin);
+      }catch(e){ fin(); }
+    } else { fin(); }
+  }
+  function build(cfg){
+    var h = host();
+    if(!h) return null;
+    var bar = document.createElement('div');
+    bar.id = 'misu-topbar';
+    var html = '';
+    html += '<header class="misu-header">';
+    html += '<div class="misu-header-left">';
+    html += '<img class="misu-brand-logo" alt="충해전기(주)">';
+    html += '<h1 class="misu-header-title">입출금 관리 시스템</h1>';
+    html += '<span class="misu-user-chip"><span id="misu-user-name"></span><button id="misu-chpw-btn" type="button" title="비밀번호 변경">비밀번호 변경</button><button id="misu-logout-btn" type="button" title="로그아웃">로그아웃</button></span>';
+    html += '</div>';
+    html += '<div class="misu-header-right"><span id="misu-header-date"></span><button id="misu-export-btn" type="button" title="데이터를 ZIP 파일로 저장합니다">자료저장</button><span id="misu-sync-status" title="자료 영구저장(GitHub) 연결 상태">로컬</span></div>';
+    html += '</header>';
+    html += '<nav class="misu-page-nav">';
+    for(var i=0;i<TABS.length;i++){
+      html += '<button type="button" class="misu-page-tab" data-target="' + TABS[i].key + '">' + TABS[i].label + '</button>';
+    }
+    html += '</nav>';
+    bar.innerHTML = html;
+    h.insertBefore(bar, h.firstChild);
+    // 헤더가 화면 전체 폭 고정이므로, 본문 컨테이너를 헤더 높이만큼 아래로
+    var _pad=function(){
+      try{
+        var bh=bar.offsetHeight||0;
+        var m=document.querySelector('section[data-testid="stMain"]')||document.body;
+        m.style.paddingTop=bh+'px';
+      }catch(_p){}
+    };
+    _pad();
+    setTimeout(_pad,300);
+    window.addEventListener('resize',_pad);
+    // ── 스크롤바를 브라우저 기본(=업무관리와 동일)으로: Streamlit이 넣은 스크롤바 스타일 규칙 제거 ──
+    var _stripScroll=function(){
+      try{
+        var sheets=document.styleSheets;
+        for(var si=0; si<sheets.length; si++){
+          var rules;
+          try{ rules=sheets[si].cssRules; }catch(_x){ continue; }
+          if(!rules) continue;
+          var walk=function(container){
+            var rs=container.cssRules||[];
+            for(var ri=rs.length-1; ri>=0; ri--){
+              var r=rs[ri];
+              if(r.cssRules && r.cssRules.length){ walk(r); continue; }
+              var sel=r.selectorText||'';
+              if(sel.indexOf('misu')>=0) continue;                      // 우리 규칙은 보존
+              if(sel.indexOf('-webkit-scrollbar')>=0){ try{ container.deleteRule(ri); }catch(_d){} continue; }
+              if(r.style && (r.style.scrollbarWidth||r.style.scrollbarColor||r.style.getPropertyValue('scrollbar-width')||r.style.getPropertyValue('scrollbar-color'))){
+                try{ r.style.removeProperty('scrollbar-width'); r.style.removeProperty('scrollbar-color'); }catch(_r){}
+              }
+            }
+          };
+          walk(sheets[si]);
+        }
+      }catch(_ss){}
+    };
+    _stripScroll();
+    setTimeout(_stripScroll,800);
+    setTimeout(_stripScroll,2500);
+    try{
+      var _so=new MutationObserver(function(){ _stripScroll(); });
+      _so.observe(document.head,{childList:true,subtree:false});
+    }catch(_mo){}
+    var img = bar.querySelector('.misu-brand-logo');
+    if(img && cfg.logo) img.src = cfg.logo;
+    var tabs = bar.querySelectorAll('.misu-page-tab');
+    for(var j=0;j<tabs.length;j++){
+      (function(t){
+        t.addEventListener('click', function(){ navTo(t.getAttribute('data-target')||'', t.textContent||''); });
+      })(tabs[j]);
+    }
+    var lb = document.getElementById('misu-logout-btn');
+    if(lb) lb.addEventListener('click', doLogout);
+    var cp = document.getElementById('misu-chpw-btn');
+    if(cp) cp.addEventListener('click', goPw);
+    var xb = document.getElementById('misu-export-btn');
+    if(xb) xb.addEventListener('click', goExport);
+    if(!window.__misuHdrTimer) window.__misuHdrTimer = setInterval(updDate, 60000);
+    window.addEventListener('popstate', function(){ setTimeout(function(){ updActive(); }, 50); });
+    return bar;
+  }
+  window.__misuHdrUpdate = function(cfg){
+    if(cfg) window.__misuHdrCfg = cfg;
+    cfg = window.__misuHdrCfg || {};
+    var bar = document.getElementById('misu-topbar');
+    if(bar && !bar.isConnected){ try{ bar.remove(); }catch(e){} bar = null; }
+    if(!bar){
+      bar = build(cfg);
+      if(!bar){
+        if((window.__misuHdrRetry||0) < 20){
+          window.__misuHdrRetry = (window.__misuHdrRetry||0) + 1;
+          setTimeout(function(){ window.__misuHdrUpdate(null); }, 250);
+        }
+        return;
+      }
+    }
+    var nm = document.getElementById('misu-user-name');
+    if(nm) nm.textContent = cfg.name || '';
+    updDate();
+    updActive();
+    updSync(cfg.sync || 'local');
+  };
+})();
 """
 
 def _restore_session(rt, nm, at_ms=None):
@@ -351,6 +753,108 @@ def check_pw():
             st.rerun()
     return False
 
+# ── 비밀번호 변경 (?pw=1) — 업무관리 _authShowChangePw 와 동일 규칙·디자인 ──
+# 검증 규칙(업무관리 _authChangePwSubmit 원문): 4자 미만 금지 / 확인 불일치 금지 / 기본 비밀번호(0000) 금지.
+# 자발적 변경이므로 현재 비밀번호 검증(signInWithPassword 재인증)을 추가로 요구한다.
+_PW_CSS = """
+<style>
+/* 업무관리 cpOverlay(auth-card) 제목: .auth-head span 그대로 */
+.misu-auth-head span{font-size:22px;line-height:32px;font-weight:700;color:#14305c;letter-spacing:-.3px;display:block;font-family:'Pretendard',sans-serif;}
+/* 고정 헤더(약 91px) 아래 공간에서 세로 중앙 정렬되도록 보정 */
+[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{min-height:calc(100vh - 120px)!important;}
+/* 닫기 버튼: 업무관리 .btn(흰 배경) + 인라인(width:100%;margin-top:8px;padding:11px) 그대로 */
+[data-testid='stForm'] .st-key-misu_pw_cancel{margin-top:8px!important;}
+.st-key-misu_pw_cancel [data-testid='stFormSubmitButton'] button{background:#fff!important;border:1px solid #e0e4ea!important;border-radius:0!important;padding:11px!important;}
+.st-key-misu_pw_cancel [data-testid='stFormSubmitButton'] button:hover{background:#f6f8fa!important;border-color:#cbd2dc!important;}
+.st-key-misu_pw_cancel [data-testid='stFormSubmitButton'] button p,.st-key-misu_pw_cancel [data-testid='stFormSubmitButton'] button div{color:#475569!important;font-weight:400!important;font-size:13px!important;line-height:1.4!important;}
+</style>
+"""
+
+def _pw_change_submit(uid, cur, np, np2):
+    """비밀번호 변경 저장. return (ok, err). Firebase 통신: 재인증 1 + accounts:update 1 + RTDB PATCH 1."""
+    # 1) 입력 검증 — 업무관리 규칙 그대로 (+ 현재 비밀번호 필수)
+    if not cur:
+        return False, "현재 비밀번호를 입력하세요."
+    if not np or len(np) < 4:
+        return False, "비밀번호는 4자 이상이어야 합니다."
+    if np != np2:
+        return False, "두 비밀번호가 일치하지 않습니다."
+    if np == "0000":
+        return False, "기본 비밀번호(0000)는 사용할 수 없습니다."
+    # 2) 현재 비밀번호 검증 (재인증 — 여기서 받은 새 idToken으로 이후 요청 수행)
+    try:
+        r = requests.post(
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + _FB_API_KEY,
+            json={"email": _synth_email(uid), "password": _sha256(cur), "returnSecureToken": True},
+            timeout=15)
+    except Exception:
+        return False, "서버 연결에 실패했습니다. 잠시 후 다시 시도하세요."
+    if r.status_code != 200:
+        return False, "현재 비밀번호가 올바르지 않습니다."
+    tok = r.json().get("idToken")
+    # 3) Firebase Auth 비밀번호 변경 (Firebase 비번 = sha256(실제 비번), 업무관리와 동일 체계)
+    new_hash = _sha256(np)
+    try:
+        u = requests.post(
+            "https://identitytoolkit.googleapis.com/v1/accounts:update?key=" + _FB_API_KEY,
+            json={"idToken": tok, "password": new_hash, "returnSecureToken": True},
+            timeout=15)
+    except Exception:
+        return False, "서버 연결에 실패했습니다. 잠시 후 다시 시도하세요."
+    if u.status_code != 200:
+        return False, "비밀번호 변경에 실패했습니다. 잠시 후 다시 시도하세요."
+    # 4) 세션 토큰 교체 — 비번 변경 시 기존 refresh token이 무효화되므로 응답의 새 토큰으로 갱신 (필수)
+    #    (쿠키/localStorage 재기록은 rerun마다 도는 기존 인증-후 components 블록이 새 _fb_ref로 수행)
+    import time as _t
+    ud = u.json()
+    new_tok = ud.get("idToken") or tok
+    st.session_state["_fb_tok"] = new_tok
+    if ud.get("refreshToken"):
+        st.session_state["_fb_ref"] = ud.get("refreshToken")
+    st.session_state["_fb_tok_at"] = _t.time()
+    # 5) RTDB 계정 메타 갱신 — 업무관리 로그인이 pwHash 대조이므로 반드시 함께 변경
+    try:
+        import urllib.parse as _up
+        p = requests.patch(
+            _FB_DB_URL + "/" + _FB_PATH + "_accounts/" + _up.quote(uid, safe="") + ".json?auth=" + str(new_tok),
+            json={"pwHash": new_hash, "mustChange": False}, timeout=15)
+        if p.status_code != 200:
+            return False, "비밀번호는 변경되었지만 계정 정보 반영에 실패했습니다. 관리자에게 문의하세요."
+    except Exception:
+        return False, "비밀번호는 변경되었지만 계정 정보 반영에 실패했습니다. 관리자에게 문의하세요."
+    return True, ""
+
+def render_pw_change():
+    """비밀번호 변경 카드 — 업무관리 변경 창(auth-card)과 동일 디자인 (_LOGIN_CSS 재사용)."""
+    st.markdown(_LOGIN_CSS, unsafe_allow_html=True)
+    st.markdown(_PW_CSS, unsafe_allow_html=True)
+    with st.form("pw_change_form"):
+        st.markdown("<div class='misu-auth-head'><img src='" + LOGO_AUTH + "' alt='충해전기(주)'><span>비밀번호 변경</span></div>", unsafe_allow_html=True)
+        _perr = st.session_state.pop("_pw_err", None)
+        if _perr:
+            st.markdown("<div class='misu-auth-err'>" + _perr + "</div>", unsafe_allow_html=True)
+        cur = st.text_input("현재 비밀번호", type="password", placeholder="현재 비밀번호")
+        np = st.text_input("새 비밀번호", type="password", placeholder="새 비밀번호 (4자 이상)")
+        np2 = st.text_input("새 비밀번호 확인", type="password", placeholder="한번 더 입력")
+        save = st.form_submit_button("비밀번호 저장", use_container_width=True)
+        with st.container(key="misu_pw_cancel"):
+            cancel = st.form_submit_button("닫기", use_container_width=True)
+    if cancel:
+        try: del st.query_params["pw"]
+        except Exception: pass
+        st.rerun()
+    if save:
+        ok, err = _pw_change_submit(st.session_state.get("uid", "").strip(),
+                                    cur or "", np or "", np2 or "")
+        if ok:
+            st.session_state["_pw_done"] = True
+            try: del st.query_params["pw"]
+            except Exception: pass
+            st.rerun()
+        else:
+            st.session_state["_pw_err"] = err
+            st.rerun()
+
 def zip_bytes(d, dirs_only=None):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -400,18 +904,18 @@ def _duerules():
 
 def render_result(R):
     st.divider()
-    st.write("**파일 판별 결과**")
+    st.markdown("<div class='misu-sec-title'>파일 판별 결과</div>", unsafe_allow_html=True)
     for loc, d in R["detected"].items():
         line = " / ".join(f"{k} {len(v)}건" for k, v in d.items() if v)
         if line: st.write(f"- {loc}: {line}")
-    # 상태 카드
+    # 상태 카드 — 기준서 요약 카드 규격(radius 0, 강조 #1B3A6B/#ccdcf5/#fff, 일반 #EAF1FB/#6b7280, 값 19px/800)
     nc = R["new_companies"]; stt = R["status"]
-    st.markdown("**상태 요약**")
+    st.markdown("<div class='misu-sec-title'>상태 요약</div>", unsafe_allow_html=True)
     cards = [("신규 업체", f"{len(nc)}곳", True)] + [(k, str(stt.get(k, 0)), False) for k in ["완납", "진행", "미수", "장기미수"]]
     h = "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:4px 0 14px;'>"
     for lab, val, hi in cards:
-        bg = NAVY if hi else "#EAF1FB"; lc = "#ccdcf5" if hi else "#3A5C8A"; vc = "#ffffff" if hi else NAVY
-        h += f"<div style='background:{bg};border-radius:10px;padding:12px 14px;'><div style='font-size:12px;color:{lc};'>{lab}</div><div style='font-size:24px;font-weight:700;color:{vc};'>{val}</div></div>"
+        bg = NAVY if hi else "#EAF1FB"; lc = "#ccdcf5" if hi else "#6b7280"; vc = "#ffffff" if hi else "#1a1a1a"
+        h += f"<div style='background:{bg};border-radius:0;padding:12px 14px;'><div style='font-size:12px;color:{lc};'>{lab}</div><div style='font-size:19px;font-weight:800;letter-spacing:-0.5px;margin-top:2px;color:{vc};'>{val}</div></div>"
     st.markdown(h + "</div>", unsafe_allow_html=True)
     # 이번에 갱신·신규 처리된 거래처 (접기/펼치기)
     chg = [{"구분": s[8], "지역": s[0], "거래처": s[1], "상태": s[3],
@@ -439,12 +943,12 @@ def render_result(R):
     # 최종 결과 + 다운로드
     if R["ok"]:
         st.success("검증 통과 — 누적본을 갱신했고 직전본을 백업했습니다." + R["saved_note"])
-        st.download_button("📥 갱신된 누적본 다운로드 (zip)", R["zip_bytes"],
+        st.download_button("갱신된 누적본 다운로드 (zip)", R["zip_bytes"],
                            file_name="누적자료_최신본.zip", mime="application/zip", type="primary", key="dl_final")
     else:
         st.error("검증 실패 — 누적본을 갱신하지 않았습니다. 직전본은 그대로 유지됩니다.")
         st.write(R["probs"][:15])
-        st.download_button("⚠ 검증 전 결과 받아보기 (zip)", R["zip_bytes"],
+        st.download_button("검증 전 결과 받아보기 (zip)", R["zip_bytes"],
                            file_name="누적자료_검증전.zip", mime="application/zip", key="dl_final")
 
 # ===== 미수 현황 대시보드 페이지 =====
@@ -472,6 +976,26 @@ def _tpl_mtime(name):
         return os.path.getmtime(os.path.join(HERE, name))
     except Exception:
         return 0
+
+def _dev_reload():
+    """로컬 테스트 전용(토큰 없음): dashboard/sales/nyung 파일이 바뀌었으면 모듈을 다시 읽어,
+    앱 재시작 없이 Ctrl+F5만으로 수정본이 반영되게 한다. 운영에서는 파일이 바뀔 일이 없어 통과."""
+    if GIT_TOKEN:
+        return
+    import importlib, sys as _sys
+    for _n in ("dashboard", "sales", "nyung"):
+        _m = _sys.modules.get(_n)
+        if not _m:
+            continue
+        try:
+            _mt = os.path.getmtime(_m.__file__)
+            if getattr(_m, "_dev_mtime", None) != _mt:
+                importlib.reload(_m)
+                _sys.modules[_n]._dev_mtime = _mt
+        except Exception:
+            pass
+
+_dev_reload()   # 매 실행(rerun)마다 로컬에서만 변경 감지
 
 @st.cache_data(show_spinner=False)
 def _sales_summary_data(_fp):
@@ -522,12 +1046,27 @@ def _misu_summary_data(_fp, basis_iso):
     }
 
 def page_dashboard():
+    # 미수 현황 전용: 전역 컨테이너 폭 제한(1320px)을 이 페이지에서만 해제하고,
+    # 업무관리 시스템 본문 여백(.main{padding:20px 24px}, ≤1024px 14px, ≤700px 10px 8px)과 동일한 좌우 여백 적용.
+    # (st.markdown은 이 페이지가 렌더될 때만 주입되므로 다른 페이지 폭은 그대로. padding-top은 모바일 상단 네비 보정 유지 위해 불변)
+    st.markdown("""<style>
+[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:100%!important;padding-left:24px!important;padding-right:24px!important;}
+[data-testid='stIFrame']{width:100%!important;}
+@media(max-width:1024px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:14px!important;padding-right:14px!important;}}
+@media(max-width:700px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:8px!important;padding-right:8px!important;}}
+</style>""", unsafe_allow_html=True)
     bd = basis_date() or datetime.date.today()
     if not os.path.isdir(DATA):
         header(); st.error("자료를 불러올 수 없습니다."); return
     try:
-        _fp = _data_fp() + (_tpl_mtime("dashboard_template.html"),)
-        _components.html(_dashboard_html(_fp, bd.isoformat(), ADMIN), height=760, scrolling=True)
+        _fp = _data_fp() + (_tpl_mtime("dashboard_template.html"), _tpl_mtime("dashboard.py"))
+        if GIT_TOKEN:
+            _dh = _dashboard_html(_fp, bd.isoformat(), ADMIN)
+        else:
+            # 로컬 테스트: 캐시 미사용 — 매 실행마다 파일에서 새로 렌더(수정 즉시 반영)
+            import dashboard as _dash
+            _dh = _dash.render(DATA, bd, _duerules(), admin=ADMIN)
+        _components.html(_dh, height=760, scrolling=True)
         # 팝업의 '내용증명 작성' 버튼이 같은 출처(same-origin)로 클릭할 숨은 트리거(거래처별). 관리자·실무자 모두.
         with st.container(key="nytrig"):
             for _o in _longoverdue_cached(_fp):
@@ -560,8 +1099,14 @@ def page_sales():
         return
     try:
         _bd = basis_date()
-        _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0, _tpl_mtime("sales_template.html"))
-        _components.html(_sales_html(_fp, _bd.isoformat() if _bd else "", ADMIN), height=900, scrolling=True)
+        _fp = (os.path.getmtime(DATA_ZIP) if os.path.exists(DATA_ZIP) else 0, _tpl_mtime("sales_template.html"), _tpl_mtime("sales.py"))
+        if GIT_TOKEN:
+            _sh = _sales_html(_fp, _bd.isoformat() if _bd else "", ADMIN)
+        else:
+            # 로컬 테스트: 캐시 미사용 — 매 실행마다 파일에서 새로 렌더(수정 즉시 반영)
+            import sales as _sales
+            _sh = _sales.render(DATA, admin=ADMIN, basis_iso=_bd.isoformat() if _bd else "")
+        _components.html(_sh, height=900, scrolling=True)
     except Exception as e:
         header(title="매출 현황"); st.error(f"매출 현황 생성 오류: {e}")
 
@@ -661,7 +1206,7 @@ def page_nyung():
         st.warning("명판/인감 파일이 자료 저장소(chjk-data)에 없습니다: " + ", ".join(miss)
                    + "  · PDF/명판이 비정상일 수 있습니다.")
     with st.spinner("불러오는 중…"):
-        _fp = _data_fp()
+        _fp = _data_fp() + (_tpl_mtime("nyung.py"), _tpl_mtime("dashboard.py"))
         lt = _longoverdue_cached(_fp)
         book = _nyung_book(_fp)
     if not lt:
@@ -695,7 +1240,7 @@ def page_nyung():
     if not m:
         st.info("이 거래처는 명단에 없어 대표자·연락처·주소가 비어 있습니다. 직접 입력하세요.")
     st.caption(f"미수액 미리보기: {amt:,}원 · 하단 날짜는 다운로드 당일이 자동 입력됩니다.")
-    if st.button("📄 내용증명 생성 (워드 + PDF)", type="primary"):
+    if st.button("내용증명 생성 (워드 + PDF)", type="primary"):
         if not corp.strip():
             st.error("거래처명을 입력하세요.")
         else:
@@ -719,10 +1264,10 @@ def page_nyung():
     if out and out.get("biz") == biz:
         st.success("생성 완료. 아래에서 내려받으세요.")
         d1, d2 = st.columns(2)
-        d1.download_button("📥 워드(.docx) 받기", out["word"], file_name=out["name"] + ".docx",
+        d1.download_button("워드(.docx) 받기", out["word"], file_name=out["name"] + ".docx",
                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_word")
         if out.get("pdf"):
-            d2.download_button("📥 PDF 받기", out["pdf"], file_name=out["name"] + ".pdf",
+            d2.download_button("PDF 받기", out["pdf"], file_name=out["name"] + ".pdf",
                                mime="application/pdf", key="dl_pdf")
         else:
             d2.warning("PDF 변환 실패 — 서버에 libreoffice-writer 가 필요합니다. 워드는 정상입니다.")
@@ -740,7 +1285,7 @@ def _alias_cust_options():
 def _render_alias_editor(udf):
     """미배정 입금자명마다 거래처를 지정 → _거래처별칭표.xlsx 에 저장 → chjk-data 반영."""
     st.markdown("---")
-    st.markdown("**이 입금자명을 앞으로 자동 매칭시키기**")
+    st.markdown("<div class='misu-sec-title'>이 입금자명을 앞으로 자동 매칭시키기</div>", unsafe_allow_html=True)
     st.caption("입금자명마다 거래처를 지정하면 별칭표에 저장되어, 다음 업로드부터 자동 매칭됩니다. "
                "거래처 입금이 아니면(세금·이자·수수료 등) '제외'를 고르세요.")
     opts = _alias_cust_options()
@@ -754,7 +1299,7 @@ def _render_alias_editor(udf):
         sel = c2.selectbox("거래처", labels, index=0, key=f"alias_{loc}_{i}", label_visibility="collapsed")
         if sel and sel != "(지정 안 함)":
             picks[(loc, nm)] = "제외" if sel.startswith("❌") else opts[loc][sel]
-    if st.button(f"💾 별칭표에 저장 ({len(picks)}건)", type="primary", disabled=not picks, key="save_alias"):
+    if st.button(f"별칭표에 저장 ({len(picks)}건)", type="primary", disabled=not picks, key="save_alias"):
         try:
             rows = [(loc, nm, tg) for (loc, nm), tg in picks.items()]
             n = store.save_alias_rows(DATA, rows, DATA_ZIP)
@@ -769,12 +1314,11 @@ def _render_alias_editor(udf):
 def page_process():
     header(title="자료 처리")
     if ADMIN:
-        st.markdown(f"<div style='margin:-6px 0 8px;'><span style='background:{NAVY};color:#fff;font-size:12px;font-weight:600;padding:3px 12px;border-radius:6px;'>🔑 관리자 계정</span></div>", unsafe_allow_html=True)
         st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
     if DATA_REPO and GIT_TOKEN and not _data_repo_dir():
         st.error("⚠ 자료 저장소(chjk-data) 연결 실패 — Secrets의 github_token 권한(chjk-data Contents: Read and write)과 github_data_repo 값을 확인하세요.")
 
-    with st.expander("🔎 거래처 검색 · 개별 다운로드", expanded=False):
+    with st.expander("거래처 검색 · 개별 다운로드", expanded=False):
         files = all_company_files()
         _label_map = {}
         for loc, f, n in files:
@@ -785,19 +1329,19 @@ def page_process():
         if sel and sel in _label_map:
             f, n = _label_map[sel]
             with open(f, "rb") as fh:
-                st.download_button(f"📥 {sel} 다운로드", fh.read(), file_name=n, key="dl_sel",
+                st.download_button(f"{sel} 다운로드", fh.read(), file_name=n, key="dl_sel",
                                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-    with st.expander("📥 현재 누적자료 전체 다운로드 (zip)", expanded=False):
+    with st.expander("현재 누적자료 전체 다운로드 (zip)", expanded=False):
         if os.path.isdir(DATA):
             st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
 
-    with st.expander("🛟 비상 복구 (직전본)", expanded=bool(st.session_state.get("confirm_restore"))):
+    with st.expander("비상 복구 (직전본)", expanded=bool(st.session_state.get("confirm_restore"))):
         if os.path.exists(BACKUP_ZIP):
             st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
             bc1, bc2 = st.columns(2)
             bc1.download_button("직전본 다운로드 (서울·화성)", zip_backup_customers(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
-            if ADMIN and bc2.button("⏪ 직전본으로 복구"):
+            if ADMIN and bc2.button("직전본으로 복구"):
                 st.session_state["confirm_restore"] = True
             if ADMIN and st.session_state.get("confirm_restore"):
                 st.warning("직전본으로 되돌리면 현재 누적본이 직전 상태로 바뀝니다. 정말 실행하시겠습니까?")
@@ -814,7 +1358,7 @@ def page_process():
             st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
 
     if ADMIN:
-        with st.expander("🔄 전체 다시 계산 (설정 변경 반영)"):
+        with st.expander("전체 다시 계산 (설정 변경 반영)"):
             st.caption("결제조건·별칭 등 설정만 바꿨을 때, 업로드 없이 전체 거래처의 상태·파일명을 현재 기준일로 다시 계산합니다.")
             if st.button("전체 다시 계산 실행", key="recalc_all"):
                 old = {}
@@ -848,7 +1392,7 @@ def page_process():
                     st.error("재계산 검증 실패 — 반영하지 않았습니다."); st.write(probs[:10])
 
         _md = st.session_state.pop("manual_done", None)
-        with st.expander("✏️ 거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=bool(_md)):
+        with st.expander("거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=bool(_md)):
             if _md: st.success(_md)
             st.caption("거래처 파일을 받아 직접 고친 뒤 여기 올리면 그 거래처를 교체합니다. 사업자번호로 자동 인식하며, 교체 전 직전본이 백업됩니다.")
             m_ups = st.file_uploader("수정한 거래처 파일(.xlsx) 업로드", accept_multiple_files=True, type=["xlsx"], key="manual_edit")
@@ -873,7 +1417,7 @@ def page_process():
                     st.toast(f"{len(good)}개 거래처 교체 완료 ✅")
                     st.rerun()
 
-        st.subheader("자료 업로드")
+        st.markdown("<div class='misu-sec-title' style='margin-top:10px;'>자료 업로드</div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("**서울** (신한·기업·하나·농협·우리 등)")
@@ -884,7 +1428,7 @@ def page_process():
             up_hwa = st.file_uploader("화성 자료", accept_multiple_files=True, key="hwa",
                                       type=["xls", "xlsx"], label_visibility="collapsed")
 
-        if st.button("🚀 처리 시작", type="primary", disabled=not (up_seoul or up_hwa)):
+        if st.button("처리 시작", type="primary", disabled=not (up_seoul or up_hwa)):
             work = tempfile.mkdtemp(); up_dir = os.path.join(work, "up"); out_dir = os.path.join(work, "out")
             os.makedirs(up_dir, exist_ok=True); os.makedirs(out_dir, exist_ok=True)
             uploads = {"서울": [], "화성": []}
@@ -918,6 +1462,8 @@ def page_process():
             render_result(st.session_state["result"])
 
 if not check_pw(): st.stop()
+st.markdown(_HDR_CSS, unsafe_allow_html=True)   # 커스텀 헤더+탭 CSS + 네이티브 네비 숨김 (인증 후에만)
+st.markdown(_WIDGET_CSS, unsafe_allow_html=True)   # 전역 위젯 스타일 (디자인 시스템 기준서 — 인증 후에만)
 ADMIN = st.session_state.get("role") == "admin"
 if st.session_state.get("uid"):
     import urllib.parse as _up2
@@ -941,10 +1487,72 @@ if st.session_state.get("uid"):
               + "},5000);"
               + "</script>")
     _components.html(_ck_js, height=0)
+    # ── 커스텀 헤더+탭 주입: 부모 문서에 1회 스크립트 주입 후, rerun마다 상태(이름·토큰·active)만 갱신 ──
+    _hdr_cfg = json.dumps({
+        "name": st.session_state.get("uid", ""),
+        "tok": st.session_state.get("_fb_tok", ""),
+        "loUrl": _lo_url,
+        "logo": LOGO_AUTH,
+        # 동기화 상태: GitHub 토큰 + 자료 저장소(chjk-data) 클론 성공 = "동기화"(초록), 아니면 "로컬"(회색)
+        "sync": ("connected" if (GIT_TOKEN and _data_repo_dir()) else "local"),
+    })
+    _hdr_boot = ("<script>(function(){try{var pd=window.parent.document;"
+                 "if(!pd.getElementById('misu-topbar-js')){"
+                 "var sc=pd.createElement('script');sc.id='misu-topbar-js';"
+                 "sc.textContent=" + json.dumps(_HDR_JS) + ";"
+                 "(pd.head||pd.body).appendChild(sc);}"
+                 "var sc2=pd.createElement('script');"
+                 "sc2.textContent='window.__misuHdrUpdate&&window.__misuHdrUpdate('+" + json.dumps(_hdr_cfg) + "+');';"
+                 "(pd.head||pd.body).appendChild(sc2);sc2.remove();"
+                 "}catch(e){}})();</script>")
+    _components.html(_hdr_boot, height=0)
+# ── 비밀번호 변경 (?pw=1): 헤더는 유지한 채 본문에 변경 카드만 렌더 ──
+if st.session_state.pop("_pw_done", None):
+    st.toast("비밀번호가 변경되었습니다.", icon="✅")
+if st.query_params.get("pw"):
+    render_pw_change()
+    st.stop()
+# ── 자료저장 (?export=1): 누적자료 zip 다운로드 자동 시작 후 홈 복귀 ──
+if st.query_params.get("export"):
+    st.markdown("<div style='max-width:420px;margin:40px auto 0;text-align:center;font-family:Pretendard,sans-serif'>"
+                "<div style='font-size:15px;font-weight:700;color:#1B3A6B;margin-bottom:10px'>자료저장</div>"
+                "<div style='font-size:13px;color:#6b7280;margin-bottom:14px'>누적자료 다운로드가 곧 시작됩니다…</div></div>", unsafe_allow_html=True)
+    _c1, _c2, _c3 = st.columns([1, 2, 1])
+    with _c2:
+        st.download_button("누적자료 다운로드 (zip)", zip_bytes(DATA),
+                           file_name="누적자료_전체백업.zip", mime="application/zip", type="primary",
+                           use_container_width=True, key="hdr_export_dl")
+    _components.html("""<script>
+(function(){
+  try{
+    var pd=window.parent.document;
+    // 다운로드 버튼 자동 클릭 (1회)
+    var t=setInterval(function(){
+      var btns=pd.querySelectorAll('button');
+      for(var i=0;i<btns.length;i++){
+        if((btns[i].textContent||'').indexOf('누적자료 다운로드')>=0){
+          clearInterval(t);
+          btns[i].click();
+          // 잠시 후 홈 복귀 (부모 컨텍스트 script 주입)
+          setTimeout(function(){
+            try{
+              var sc=pd.createElement('script');
+              sc.textContent='location.replace(location.origin+location.pathname);';
+              (pd.head||pd.body).appendChild(sc);
+            }catch(_n){}
+          },1600);
+          return;
+        }
+      }
+    },120);
+    setTimeout(function(){ clearInterval(t); },6000);
+  }catch(e){}
+})();</script>""", height=0)
+    st.stop()
 # 페이지 객체(전역) — 팝업 트리거와 '돌아가기'에서 st.switch_page 로 이동. 미수현황 탭은 항상 홈으로 복귀.
 _dashboard_page = st.Page(page_dashboard, title="미수 현황", icon="📊", default=True)
-_sales_page = st.Page(page_sales, title="매출 현황", icon="📈")
-_process_page = st.Page(page_process, title="자료 처리", icon="🗂")
+_sales_page = st.Page(page_sales, title="매출 현황", icon="📈", url_path="sales")
+_process_page = st.Page(page_process, title="자료 처리", icon="🗂", url_path="process")
 _nyung_page = st.Page(page_nyung, title="내용증명", icon="📄", url_path="page_nyung")
 _pages = [_dashboard_page, _sales_page, _nyung_page]   # 내용증명은 관리자·실무자 모두(탭은 CSS로 숨김, 팝업으로 진입)
 _pages.append(_process_page)
