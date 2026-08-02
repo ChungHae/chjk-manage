@@ -439,6 +439,13 @@ _HDR_JS = r"""
       var ls = document.querySelectorAll(sels[i]);
       for(var j=0;j<ls.length;j++){ if(out.indexOf(ls[j]) === -1) out.push(ls[j]); }
     }
+    if(!out.length){
+      // 최신 Streamlit: 네비 링크가 포털(팝업)로 렌더될 수 있음 — 같은 출처 링크만 수집
+      var all = document.querySelectorAll('a[href]');
+      for(var k=0;k<all.length;k++){
+        try{ if(new URL(all[k].href).origin === location.origin) out.push(all[k]); }catch(e){}
+      }
+    }
     return out;
   }
   function linkPath(a){
@@ -470,19 +477,35 @@ _HDR_JS = r"""
     if(p === '') p = '/';
     return location.origin + p;
   }
-  function navTo(target, label){
-    updActive(target);
-    var a = findNative(target, label);
-    if(a){
-      try{ a.click(); }catch(e){}
-      setTimeout(function(){ updActive(); }, 500);
-      setTimeout(function(){ updActive(); }, 1500);
-      return;
-    }
+  function hardNav(target){
     var u = baseUrl().replace(/\/$/,'');
     // 홈(미수현황)은 반드시 끝 빗금 포함 — Streamlit Cloud 내부 경로(/~/+)는 빗금 없으면 플랫폼 오류
     u = target ? (u + '/' + target) : (u + '/');
     try{ location.href = u; }catch(e){}
+  }
+  function clickSpa(a){
+    try{ a.click(); }catch(e){}
+    setTimeout(function(){ updActive(); }, 500);
+    setTimeout(function(){ updActive(); }, 1500);
+  }
+  function navTo(target, label){
+    updActive(target);
+    var a = findNative(target, label);
+    if(a){ clickSpa(a); return; }
+    // 최신 Streamlit(운영): 네비가 '3 more' 팝업으로 접혀 링크가 DOM에 없음 →
+    // 팝업 버튼을 눌러 링크를 띄운 뒤 SPA 클릭 (헤더가 화면 밖이라 팝업도 안 보임)
+    var mb = document.querySelector('[data-testid="stTopNavSection"][aria-haspopup]');
+    if(mb){
+      try{ mb.click(); }catch(e){}
+      setTimeout(function(){
+        var a2 = findNative(target, label);
+        if(a2){ clickSpa(a2); return; }
+        try{ mb.click(); }catch(e){}  /* 못 찾으면 팝업 닫고 전체 이동 */
+        hardNav(target);
+      }, 300);
+      return;
+    }
+    hardNav(target);
   }
   function clearLocal(){
     try{
