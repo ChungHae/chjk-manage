@@ -1428,6 +1428,7 @@ def page_process():
         with row1_b:
             with st.container(key="pcard-zip"):
                 st.markdown("<div class='misu-sec-title'>현재 누적자료 전체 다운로드 (zip)</div>", unsafe_allow_html=True)
+                st.caption("현재 등록된 서울·화성 전체 거래처 자료를 zip 파일 하나로 묶어 한 번에 내려받습니다.")
                 if os.path.isdir(DATA):
                     st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
 
