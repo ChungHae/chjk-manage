@@ -187,7 +187,7 @@ function openCompany(name){
     `<div class="row vh" style="margin:0 0 4px"><div class=lab></div><div class=bars></div><div class=val><b style="color:#1B3A6B">매출</b> / ${reg} 순위</div></div>`+rows;
   document.getElementById("mback").classList.add("open");centerModal(document.getElementById("mbox"));fitVP();
 }
-function closeModal(){document.getElementById("mback").classList.remove("open");fitVP();}
+function closeModal(){document.getElementById("mback").classList.remove("open");_cmEl=null;fitVP();}
 function openBuy(){
   const all=(D.buyrank&&D.buyrank[Y+"|"+R])||[];
   const sub=(Y==="전체"?"전 기간":Y+"년")+" "+R;
@@ -246,20 +246,27 @@ function topOff(){try{let o=0,w=window;while(w!==window.top&&w.frameElement){o+=
 function fitVP(){try{const fe=window.frameElement;if(fe){const w=document.querySelector(".wrap");const h=Math.ceil(w?w.getBoundingClientRect().height:document.body.scrollHeight);fe.style.height=(h+6)+"px";}}catch(e){}}
 function visTop(){try{return (window.top.scrollY||window.top.pageYOffset||0)-topOff();}catch(e){return 0;}}
 /* 팝업을 '보이는 화면' 정중앙에 (로컬 1겹·운영 2겹 프레임 공통) */
-function centerModal(el){
+function _cmCalc(el){
   var o=0,w=window;
   try{while(w!==window.top&&w.frameElement){o+=w.frameElement.getBoundingClientRect().top;w=w.parent;}}catch(e){}
   var vh=0; try{vh=window.top.innerHeight||window.top.document.documentElement.clientHeight||0;}catch(e){}
   if(!vh) vh=window.innerHeight;
   el.style.maxHeight=Math.round(vh*0.82)+'px';  /* 최대 높이도 '보이는 화면' 기준(82%) */
   var c=(-o)+vh/2;
+  var h=el.offsetHeight||0;
+  if(h){var maxC=Math.max(document.documentElement.scrollHeight-h/2-8,h/2+8);c=Math.min(Math.max(c,h/2+8),maxC);}
   el.style.top=c+'px';
-  requestAnimationFrame(function(){
-    var h=el.offsetHeight||0;
-    var maxC=Math.max(document.documentElement.scrollHeight-h/2-8,h/2+8);
-    var cc=Math.min(Math.max(c,h/2+8),maxC);
-    if(Math.abs(cc-c)>1) el.style.top=cc+'px';
-  });
+}
+var _cmEl=null,_cmHooked=false,_cmFn=null;
+function centerModal(el){
+  _cmEl=el; _cmCalc(el);
+  requestAnimationFrame(function(){ if(_cmEl===el)_cmCalc(el); });
+  if(!_cmHooked){
+    _cmHooked=true;
+    _cmFn=function(){ if(_cmEl)_cmCalc(_cmEl); };
+    var w=window;
+    try{ while(true){ w.addEventListener('scroll',_cmFn,{passive:true}); w.addEventListener('resize',_cmFn); if(w===window.top)break; w=w.parent; } }catch(e){}
+  }
 }
 fitVP();setTimeout(fitVP,150);setTimeout(fitVP,600);setTimeout(fitVP,1500);
 try{document.fonts&&document.fonts.ready.then(fitVP);}catch(e){}
