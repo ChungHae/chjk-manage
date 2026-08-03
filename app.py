@@ -1371,11 +1371,7 @@ def page_process():
    플랫 툴바(흰 배경·하단 1px #e5e5e5·그림자 0 2px 6px)+내부는 테두리 없이 투명, 글자색 #14305c, 13px.
    (Streamlit 셀렉트박스 DOM이 BaseWeb div → React Aria ComboBox[role=group][data-rac]+input[role=combobox]로
    바뀌어 셀렉터를 새 구조로 갱신함 — 2026-08-03) */
-.stApp .st-key-cust_sel{background:#fff!important;border:0!important;border-bottom:1px solid #e5e5e5!important;box-shadow:0 2px 6px rgba(15,23,42,.06)!important;padding:0 14px 4px!important;box-sizing:border-box!important;border-radius:0!important;}
-/* 1행 정렬 보정(2026-08-03): 검색창 라벨의 내장 상단 여백·센터링을 제거해 옆 카드(zip)의
-   설명글·버튼과 같은 줄에 나오도록 맞춤 (컨테이너 top-padding 4→0, 라벨 min-height 0, 라벨 하단
-   여백을 zip 카드의 캡션→버튼 시작 위치와 픽셀 일치하도록 지정). */
-.stApp .st-key-cust_sel [data-testid="stWidgetLabel"]{min-height:0!important;margin-bottom:5px!important;}
+.stApp .st-key-cust_sel{background:#fff!important;border:0!important;border-bottom:1px solid #e5e5e5!important;box-shadow:0 2px 6px rgba(15,23,42,.06)!important;padding:4px 14px!important;box-sizing:border-box!important;border-radius:0!important;}
 .stApp .st-key-cust_sel [role="group"][data-rac]{border:none!important;background:transparent!important;box-shadow:none!important;padding:4px 6px!important;}
 .stApp .st-key-cust_sel [role="group"][data-rac]:hover{background:rgba(27,58,107,.045)!important;}
 .stApp .st-key-cust_sel [role="group"][data-rac]:has(>input[aria-expanded="true"]),
@@ -1392,6 +1388,12 @@ def page_process():
   box-shadow:0 1px 3px rgba(0,0,0,.06)!important;padding:10px 16px 11px!important;margin-bottom:0!important;
   height:100%!important;box-sizing:border-box!important;gap:6px!important;}
 .stApp [class*="st-key-pcard-"] .misu-sec-title,.stApp .st-key-data_upload_card .misu-sec-title{margin:0 0 6px!important;}
+/* 1행 정렬 기준 교정(2026-08-03): '거래처 검색·개별 다운로드'(원본, 손대지 않음)의 제목→설명글
+   자연 간격을 기준으로 삼아 나머지 카드(zip·비상복구·전체 다시계산)의 제목→설명글 캡션에 동일한
+   시각 간격을 맞춤 — 거래처 검색 카드는 selectbox 라벨 자체 구조상 제목 하단과 라벨 텍스트 사이에
+   내장 여백이 있어 다른 카드의 순수 caption보다 시각적으로 더 아래에서 시작함(라이브 실측 차이 6px).
+   이 차이만큼 다른 카드의 캡션에 margin-top을 더해 검색 카드와 같은 줄에 오도록 보정. */
+.stApp [class*="st-key-pcard-"] [data-testid="stCaptionContainer"]{margin-top:6px!important;}
 /* 행 간격 축소(2026-08-03, "스크롤 없이 한 화면에" 요청) — 자료처리 페이지에서만, 최상위 블록 간
    기본 gap(16px)을 줄임. 이 페이지 함수 안에서만 주입되는 스타일이라 다른 탭에는 영향 없음. */
 [data-testid='stMainBlockContainer']>[data-testid='stVerticalBlock']{gap:6px!important;}
