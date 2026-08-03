@@ -40,7 +40,8 @@ st.markdown("""<style>
   [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] style){ display:none !important; }
   [data-testid="stMainBlockContainer"]{ padding-top:58px !important; }
   /* 네이티브 header()(자료처리 등) 로고·제목을 미수현황 모바일 크기(로고 40·제목 18·부제 11)에 맞춤 */
-  .pg-hdr{ gap:10px !important; margin:6px 0 14px !important; }
+  /* margin은 데스크톱과 동일(9px 0 14px)하게 유지 — 매출·미수현황 #hsub와 통일(모바일 별도 override 없음) */
+  .pg-hdr{ gap:10px !important; }
   .pg-hdr-logo{ height:40px !important; }
   .pg-hdr-title{ font-size:18px !important; }
   .pg-hdr-sub{ font-size:11px !important; letter-spacing:1px !important; }
@@ -72,9 +73,10 @@ def header(full=True, title=None):
     # 과거 페이지 내 헤더(로고·제목) 제거(사용자 요청, 2026-07-31) — 기준일 표시만 그 자리에 유지
     bd = basis_date()
     if full and bd:
-        # 업무관리 가격확인 '가격표 갱신일' 표기와 동일: 11px #6b7280, 라벨만 굵게 #334155
+        # 미수·매출현황 템플릿의 #hsub와 완전히 동일한 규격: 11px #6b7280, 라벨만 굵게 #334155,
+        # margin 9px 0 14px (상단 9px — 탭바와의 간격까지 동일)
         st.markdown(
-            f"<div class='pg-hdr' style='font-size:11px;color:#6b7280;letter-spacing:normal;margin:0 0 14px;'>"
+            f"<div class='pg-hdr' style='font-size:11px;color:#6b7280;letter-spacing:normal;margin:9px 0 14px;'>"
             f"<b style='color:#334155;white-space:nowrap;'>현재 자료</b>&nbsp;&nbsp;{bd.year}년 {bd.month}월 {bd.day}일 기준</div>",
             unsafe_allow_html=True)
 
@@ -337,11 +339,16 @@ div[data-baseweb="popover"] li[role="option"]:hover,div[data-baseweb="popover"] 
 .stApp [data-testid="stFileUploaderDropzone"] button:hover{background:#136b34!important;border-color:#136b34!important;}
 .stApp [data-testid="stFileUploaderDropzone"] small,.stApp [data-testid="stFileUploaderDropzoneInstructions"] span{color:#888!important;}
 .stApp [data-testid="stFileUploaderFile"]{border-radius:0!important;font-size:13px!important;}
-/* ── expander: schedule-wrap 규격(흰 배경, 1px #d6deea, radius 0), 헤더 13px/700 ── */
-.stApp [data-testid="stExpander"] details{border:1px solid #d6deea!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;}
-.stApp [data-testid="stExpander"] summary{padding:10px 14px!important;}
-.stApp [data-testid="stExpander"] summary:hover{color:#14305c!important;}
-.stApp [data-testid="stExpander"] summary p{font-size:13px!important;font-weight:700!important;color:#1a1a1a!important;}
+/* ── expander·자료업로드 카드: 미수·매출현황 .card 규격과 통일(흰 배경, 1px #e5e9f0, radius 0,
+   옅은 그림자 0 1px 3px), 소제목은 misu-sec-title과 동일한 4px 남색 좌측 바 ── */
+.stApp [data-testid="stExpander"]{margin-bottom:10px!important;}
+.stApp [data-testid="stExpander"] details{border:1px solid #e5e9f0!important;border-radius:0!important;background:#fff!important;box-shadow:0 1px 3px rgba(0,0,0,.06)!important;}
+.stApp [data-testid="stExpander"] summary{padding:12px 16px!important;transition:background .12s!important;}
+.stApp [data-testid="stExpander"] summary:hover{background:#fafafa!important;}
+.stApp [data-testid="stExpander"] summary p{display:flex!important;align-items:center!important;font-size:13px!important;font-weight:700!important;color:#1a1a1a!important;letter-spacing:-0.2px!important;}
+.stApp [data-testid="stExpander"] summary p::before{content:'';width:4px;height:14px;background:#14305c;margin-right:9px;flex:none;}
+.stApp .st-key-data_upload_card{border:1px solid #e5e9f0!important;border-radius:0!important;background:#fff!important;box-shadow:0 1px 3px rgba(0,0,0,.06)!important;padding:16px 16px 18px!important;margin-bottom:10px!important;}
+.stApp .st-key-data_upload_card .misu-sec-title{margin:0 0 10px!important;}
 /* ── 표(st.dataframe): 외곽만 CSS로 통일(셀 내부는 캔버스 렌더러라 CSS 불가) ── */
 .stApp [data-testid="stDataFrame"]{border:1px solid #d6deea!important;border-radius:0!important;}
 .stApp [data-testid="stDataFrame"]>div,.stApp [data-testid="stDataFrame"] [data-testid="stDataFrameResizable"]{border-radius:0!important;}
@@ -1463,46 +1470,47 @@ def page_process():
                     st.toast(f"{len(good)}개 거래처 교체 완료 ✅")
                     st.rerun()
 
-        st.markdown("<div class='misu-sec-title' style='margin-top:10px;'>자료 업로드</div>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("**서울** (신한·기업·하나·농협·우리 등)")
-            up_seoul = st.file_uploader("서울 자료", accept_multiple_files=True, key="seoul",
-                                        type=["xls", "xlsx"], label_visibility="collapsed")
-        with col2:
-            st.markdown("**화성** (신한)")
-            up_hwa = st.file_uploader("화성 자료", accept_multiple_files=True, key="hwa",
-                                      type=["xls", "xlsx"], label_visibility="collapsed")
+        with st.container(key="data_upload_card"):
+            st.markdown("<div class='misu-sec-title'>자료 업로드</div>", unsafe_allow_html=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**서울** (신한·기업·하나·농협·우리 등)")
+                up_seoul = st.file_uploader("서울 자료", accept_multiple_files=True, key="seoul",
+                                            type=["xls", "xlsx"], label_visibility="collapsed")
+            with col2:
+                st.markdown("**화성** (신한)")
+                up_hwa = st.file_uploader("화성 자료", accept_multiple_files=True, key="hwa",
+                                          type=["xls", "xlsx"], label_visibility="collapsed")
 
-        if st.button("처리 시작", type="primary", disabled=not (up_seoul or up_hwa)):
-            work = tempfile.mkdtemp(); up_dir = os.path.join(work, "up"); out_dir = os.path.join(work, "out")
-            os.makedirs(up_dir, exist_ok=True); os.makedirs(out_dir, exist_ok=True)
-            uploads = {"서울": [], "화성": []}
-            for loc, ulist in [("서울", up_seoul or []), ("화성", up_hwa or [])]:
-                for f in ulist:
-                    p = os.path.join(up_dir, f"{loc}_{f.name}"); open(p, "wb").write(f.getbuffer()); uploads[loc].append(p)
-            log_area = st.empty(); logs = []
-            def prog(m): logs.append(m); log_area.code("\n".join(logs[-12:]))
-            with st.spinner("처리 중… (파일이 많으면 수십 초 걸릴 수 있어요)"):
-                try:
-                    res = pipeline.process(uploads, DATA if os.path.isdir(DATA) else up_dir, out_dir, progress=prog, ref_date=basis_date())
-                except Exception as e:
-                    st.error(f"처리 오류: {e}"); st.stop()
-                ok, probs = pipeline.verify(out_dir, DATA)
-                if ok:
-                    store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
-                    open(BASIS, "w", encoding="utf-8").write(res.get("basis") or datetime.date.today().isoformat())
-                    saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "update baseline via app")
-                    note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
-                    zb = zip_bytes(DATA)
-                else:
-                    note = ""; zb = zip_bytes(out_dir)
-            st.session_state["result"] = {
-                "detected": res["detected"], "status": res["status"], "new_companies": res.get("new_companies", []),
-                "summary": res["summary"], "unassigned": res["unassigned"],
-                "ok": ok, "probs": probs, "zip_bytes": zb, "saved_note": note,
-            }
-            log_area.empty()
+            if st.button("처리 시작", type="primary", disabled=not (up_seoul or up_hwa)):
+                work = tempfile.mkdtemp(); up_dir = os.path.join(work, "up"); out_dir = os.path.join(work, "out")
+                os.makedirs(up_dir, exist_ok=True); os.makedirs(out_dir, exist_ok=True)
+                uploads = {"서울": [], "화성": []}
+                for loc, ulist in [("서울", up_seoul or []), ("화성", up_hwa or [])]:
+                    for f in ulist:
+                        p = os.path.join(up_dir, f"{loc}_{f.name}"); open(p, "wb").write(f.getbuffer()); uploads[loc].append(p)
+                log_area = st.empty(); logs = []
+                def prog(m): logs.append(m); log_area.code("\n".join(logs[-12:]))
+                with st.spinner("처리 중… (파일이 많으면 수십 초 걸릴 수 있어요)"):
+                    try:
+                        res = pipeline.process(uploads, DATA if os.path.isdir(DATA) else up_dir, out_dir, progress=prog, ref_date=basis_date())
+                    except Exception as e:
+                        st.error(f"처리 오류: {e}"); st.stop()
+                    ok, probs = pipeline.verify(out_dir, DATA)
+                    if ok:
+                        store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
+                        open(BASIS, "w", encoding="utf-8").write(res.get("basis") or datetime.date.today().isoformat())
+                        saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "update baseline via app")
+                        note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
+                        zb = zip_bytes(DATA)
+                    else:
+                        note = ""; zb = zip_bytes(out_dir)
+                st.session_state["result"] = {
+                    "detected": res["detected"], "status": res["status"], "new_companies": res.get("new_companies", []),
+                    "summary": res["summary"], "unassigned": res["unassigned"],
+                    "ok": ok, "probs": probs, "zip_bytes": zb, "saved_note": note,
+                }
+                log_area.empty()
 
         if st.session_state.get("result"):
             render_result(st.session_state["result"])
