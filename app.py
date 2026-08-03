@@ -40,7 +40,7 @@ st.markdown("""<style>
   [data-testid="stMainBlockContainer"] [data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] style){ display:none !important; }
   [data-testid="stMainBlockContainer"]{ padding-top:58px !important; }
   /* 네이티브 header()(자료처리 등) 로고·제목을 미수현황 모바일 크기(로고 40·제목 18·부제 11)에 맞춤 */
-  /* margin은 데스크톱과 동일(9px 0 14px)하게 유지 — 매출·미수현황 #hsub와 통일(모바일 별도 override 없음) */
+  /* margin은 데스크톱과 동일(15px 0 14px, 2026-08-03 실측 보정)하게 유지 — 매출·미수현황 #hsub와 통일(모바일 별도 override 없음) */
   .pg-hdr{ gap:10px !important; }
   .pg-hdr-logo{ height:40px !important; }
   .pg-hdr-title{ font-size:18px !important; }
@@ -73,11 +73,14 @@ def header(full=True, title=None):
     # 과거 페이지 내 헤더(로고·제목) 제거(사용자 요청, 2026-07-31) — 기준일 표시만 그 자리에 유지
     bd = basis_date()
     if full and bd:
-        # 미수·매출현황 템플릿의 #hsub와 완전히 동일한 규격: 11px #6b7280, 라벨만 굵게 #334155,
-        # margin 9px 0 14px (상단 9px — 탭바와의 간격까지 동일)
+        # 미수·매출현황 템플릿의 #hsub와 실측(라이브 DOM 측정) 기준으로 완전히 동일하게 맞춤(2026-08-03):
+        # 1) margin-top 9px→15px — #hsub는 .wrap의 padding-top:6px가 더해져 탭바 기준 22.8px 간격인데,
+        #    네이티브 렌더 경로는 그 6px 여백이 없어 9px만으로는 6px 모자랐음(실측: 16.8px vs 22.8px)
+        # 2) <b>에 font-weight:700 명시 — 동일 인라인 스타일인데도 스트림릿 테마 영향으로 600으로 렌더되던 것을
+        #    #hsub(격리된 iframe, 700)와 실측 비교해 확인 후 강제 고정
         st.markdown(
-            f"<div class='pg-hdr' style='font-size:11px;color:#6b7280;letter-spacing:normal;margin:9px 0 14px;'>"
-            f"<b style='color:#334155;white-space:nowrap;'>현재 자료</b>&nbsp;&nbsp;{bd.year}년 {bd.month}월 {bd.day}일 기준</div>",
+            f"<div class='pg-hdr' style='font-size:11px;color:#6b7280;letter-spacing:normal;margin:15px 0 14px;'>"
+            f"<b style='color:#334155;white-space:nowrap;font-weight:700;'>현재 자료</b>&nbsp;&nbsp;{bd.year}년 {bd.month}월 {bd.day}일 기준</div>",
             unsafe_allow_html=True)
 
 # ── 업무관리 앱과 로그인 공유 (동일 Firebase 계정) ──
@@ -310,22 +313,29 @@ _WIDGET_CSS = """
 .stApp [data-testid="stTextInput"] input,.stApp [data-testid="stNumberInput"] input{
   border:none!important;background:transparent!important;font-size:13px!important;color:#1a1a1a!important;padding:8px 11px!important;box-shadow:none!important;}
 .stApp [data-testid="stTextInput"] input::placeholder,.stApp [data-testid="stNumberInput"] input::placeholder,
-.stApp [data-baseweb="select"] input::placeholder{color:#aab4c2!important;}
+.stApp [data-baseweb="select"] input::placeholder,
+.stApp [data-testid="stSelectbox"] input::placeholder{color:#aab4c2!important;}
 .stApp [data-testid="stTextArea"] div[data-baseweb="textarea"]{border:1.5px solid #e5e5e5!important;border-radius:0!important;box-shadow:none!important;}
 .stApp [data-testid="stTextArea"] div[data-baseweb="textarea"]:focus-within{border-color:#1B3A6B!important;}
 .stApp [data-testid="stTextArea"] textarea{font-size:13px!important;color:#1a1a1a!important;}
-.stApp [data-testid="stSelectbox"] div[data-baseweb="select"]>div:first-child,
+/* Streamlit 셀렉트박스가 BaseWeb div 구조 → React Aria ComboBox(input[role=combobox] + [role=group][data-rac])로
+   바뀌어 아래 두 블록의 셀렉터를 새 구조에 맞게 갱신함(2026-08-03) — 시각 디자인은 기존과 동일하게 유지 */
+.stApp [data-testid="stSelectbox"] [role="group"][data-rac],
 .stApp [data-testid="stDateInput"] div[data-baseweb="input"]{
   border:1.5px solid #e5e5e5!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;font-size:13px!important;color:#1a1a1a!important;}
-.stApp [data-testid="stSelectbox"] div[data-baseweb="select"]>div:first-child:focus-within,
-.stApp [data-testid="stSelectbox"] div[data-baseweb="select"][aria-expanded="true"]>div:first-child,
+.stApp [data-testid="stSelectbox"] [role="group"][data-rac]:focus-within,
+.stApp [data-testid="stSelectbox"] [role="group"][data-rac]:has(>input[aria-expanded="true"]),
 .stApp [data-testid="stDateInput"] div[data-baseweb="input"]:focus-within{border-color:#1B3A6B!important;box-shadow:none!important;}
+.stApp [data-testid="stSelectbox"] [role="group"][data-rac] input,
 .stApp [data-testid="stSelectbox"] div[data-baseweb="select"] div{font-size:13px;}
-/* 셀렉트 드롭다운(각진화: radius 0 + 그림자 0 4px 16px, 항목 hover #f4f8fe/#14305c) */
-div[data-baseweb="popover"] [role="listbox"]{border:1px solid #d6e4f5!important;border-radius:0!important;box-shadow:0 4px 16px rgba(0,0,0,.10)!important;
+/* 셀렉트 드롭다운(팝오버는 body 최상위로 포탈되어 data-baseweb 훅이 사라졌으므로 :has()로 구조 기반 스코프;
+   업무관리 견적관리탭 #qVendorSearch의 드롭다운(#qVendorDropdown)과 동일 규격: radius 8px, 테두리 #d6e4f5,
+   그림자 0 8px 22px rgba(27,58,107,.15) — 2026-08-03 거래처 검색 디자인 통일 작업으로 전체 셀렉트에 반영) */
+div:has(>[role="listbox"]){border:1px solid #d6e4f5!important;border-radius:8px!important;box-shadow:0 8px 22px rgba(27,58,107,.15)!important;
   font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif!important;}
-div[data-baseweb="popover"] li[role="option"]{font-size:13px!important;color:#1a1a1a!important;}
-div[data-baseweb="popover"] li[role="option"]:hover,div[data-baseweb="popover"] li[aria-selected="true"]{background:#f4f8fe!important;color:#14305c!important;}
+[role="listbox"] [role="option"]{font-size:13px!important;color:#1a1a1a!important;}
+[role="listbox"] [role="option"]:hover,[role="listbox"] [role="option"][aria-selected="true"],
+[role="listbox"] [role="option"][data-focused],[role="listbox"] [role="option"][data-hovered]{background:#f4f8fe!important;color:#14305c!important;}
 /* ── 라디오·체크: 테두리 #c8d2de, 선택 시 네이비 (테마 적색 제거) ── */
 .stApp label[data-baseweb="radio"] div p{font-size:13px!important;color:#1a1a1a!important;}
 .stApp label[data-baseweb="radio"]>div:first-of-type{border-color:#c8d2de!important;}
@@ -1357,13 +1367,18 @@ def page_process():
 [data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:100%!important;padding-left:24px!important;padding-right:24px!important;}
 @media(max-width:1024px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:14px!important;padding-right:14px!important;}}
 @media(max-width:700px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:8px!important;padding-right:8px!important;}}
-/* 거래처 검색(개별 다운로드) — 플랫 툴바 검색창 디자인(업무관리 재고검색창/미수·매출현황 거래처검색과 동일) */
+/* 거래처 검색(개별 다운로드) — 업무관리 견적관리탭 #qVendorSearch(.q-flat)와 동일 디자인으로 베낌:
+   플랫 툴바(흰 배경·하단 1px #e5e5e5·그림자 0 2px 6px)+내부는 테두리 없이 투명, 글자색 #14305c, 13px.
+   (Streamlit 셀렉트박스 DOM이 BaseWeb div → React Aria ComboBox[role=group][data-rac]+input[role=combobox]로
+   바뀌어 셀렉터를 새 구조로 갱신함 — 2026-08-03) */
 .stApp .st-key-cust_sel{background:#fff!important;border:0!important;border-bottom:1px solid #e5e5e5!important;box-shadow:0 2px 6px rgba(15,23,42,.06)!important;padding:4px 14px!important;box-sizing:border-box!important;border-radius:0!important;}
-.stApp .st-key-cust_sel div[data-baseweb="select"]>div:first-child{border:none!important;background:transparent!important;box-shadow:none!important;padding:4px 6px!important;}
-.stApp .st-key-cust_sel div[data-baseweb="select"]>div:first-child:hover{background:rgba(27,58,107,.045)!important;}
-.stApp .st-key-cust_sel div[data-baseweb="select"][aria-expanded="true"]>div:first-child,
-.stApp .st-key-cust_sel div[data-baseweb="select"]>div:first-child:focus-within{background:#f2f4f7!important;border:none!important;}
-.stApp .st-key-cust_sel div[data-baseweb="select"] input::placeholder{color:#aab4c2!important;}
+.stApp .st-key-cust_sel [role="group"][data-rac]{border:none!important;background:transparent!important;box-shadow:none!important;padding:4px 6px!important;}
+.stApp .st-key-cust_sel [role="group"][data-rac]:hover{background:rgba(27,58,107,.045)!important;}
+.stApp .st-key-cust_sel [role="group"][data-rac]:has(>input[aria-expanded="true"]),
+.stApp .st-key-cust_sel [role="group"][data-rac]:focus-within{background:#f2f4f7!important;border:none!important;}
+.stApp .st-key-cust_sel input[role="combobox"]{color:#14305c!important;font-size:13px!important;font-family:inherit!important;background:transparent!important;}
+.stApp .st-key-cust_sel input[role="combobox"]::placeholder{color:#aab4c2!important;}
+.stApp .st-key-cust_sel button[aria-label="Open"]{background:transparent!important;}
 </style>""", unsafe_allow_html=True)
     header(title="자료 처리")
     if ADMIN:
@@ -1378,7 +1393,7 @@ def page_process():
             _label_map[_cust_label(loc, n)] = (f, n)
         _opts = list(_label_map.keys())
         sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · 엔터(또는 클릭) 후 바로 입력하면 새로 검색됩니다",
-                           _opts, index=None, placeholder="거래처명 입력 (예: 농협)", key="cust_sel")
+                           _opts, index=None, placeholder="거래처 검색…", key="cust_sel")
         if sel and sel in _label_map:
             f, n = _label_map[sel]
             with open(f, "rb") as fh:
