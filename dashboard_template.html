@@ -6,6 +6,7 @@
 .wrap{max-width:100%;margin:0;padding:6px 0 30px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid #c8d2de;padding:0 0 12px;margin-bottom:20px}.hgroup{display:flex;align-items:center;gap:18px}.logo{height:52px;width:auto;object-fit:contain}.htitle{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:-0.3px;line-height:1.25;display:flex;align-items:center}.htitle:before{content:'';width:4px;height:18px;background:#14305c;margin-right:9px;flex:none}.hsub{font-size:12px;letter-spacing:2px;color:#888;margin-top:2px;padding-left:13px}.syslink{background:#1B3A6B;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:9px 15px;border-radius:0;white-space:nowrap}.syslink:hover{background:#14305c}
 .legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;font-size:12px;color:#6b7280;margin-bottom:12px;padding:9px 14px;background:#f4f6fb;border:1px solid #e5e9f0;border-radius:0}.legend i{display:inline-block;width:9px;height:9px;border-radius:0;margin-right:5px}.legend b{color:#1a1a1a;font-weight:600}.legend .tag{margin-right:5px}
+.stlegend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:11px;color:#6b7280}.stlegend b{color:#1a1a1a;font-weight:600}.stlegend .tag{margin-right:4px}
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
 .kpi{background:#EAF1FB;border:none;border-radius:0;padding:12px 14px;transition:box-shadow .12s}
 .kpi.hi{background:#1B3A6B;color:#fff}
@@ -60,13 +61,7 @@ tr.main{cursor:pointer} tr.main:hover{background:#fafafa}
 .note{font-size:12px;color:#9ca3af;margin-top:18px}
 @media(max-width:1024px){.charts{grid-template-columns:1fr}}@media(max-width:680px){.kpis{grid-template-columns:1fr}.htitle{font-size:17px}.hsub{font-size:11px;letter-spacing:1px}.logo{height:40px}.top{gap:10px;margin-bottom:14px}.legend{font-size:11px;gap:10px;padding:8px 10px}.card{overflow:hidden}table{min-width:0;width:100%}th,td{padding:9px 6px;font-size:12px}th:first-child,td:first-child{padding-left:10px}th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}.reg{white-space:nowrap}td:first-child,th:first-child{white-space:normal;word-break:break-all}.toolbar .search{flex:1 1 100%}.search input{width:100%}.wrap{padding:6px 0 40px}}
 .modal{position:absolute;top:0;left:0;width:100%;height:100%;background:transparent;display:none;z-index:100}.modal.open{display:block}.modalbox{position:absolute;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:0;border:1px solid #c8d2de;width:calc(100% - 32px);max-width:560px;max-height:82vh;overflow:auto;padding:24px 26px 26px;box-shadow:0 24px 70px rgba(20,30,50,.28),0 0 110px 26px rgba(27,58,107,.20)}.mclose{position:absolute;top:10px;right:14px;font-size:24px;line-height:1;color:#9ca3af;cursor:pointer;border:none;background:none}.mclose:hover{color:#555}.mhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border-bottom:1px solid #e5e5e5;padding-bottom:14px;margin-bottom:14px}.mname{font-size:20px;font-weight:800;color:#1a1a1a;letter-spacing:-0.3px}.msub{font-size:12.5px;color:#6b7280;margin-top:4px}.mamt{font-size:14px;color:#475569}.mamt b{font-size:24px;font-weight:800;color:#1B3A6B;margin-left:6px}.mdh{font-size:12px;color:#888;font-weight:500;margin:16px 0 6px}</style></head><body><div class=wrap>
-@@ADMINBADGE@@<div class=legend>
- <span style="font-size:11px;letter-spacing:normal;white-space:nowrap"><b style="color:#334155">현재 자료</b>&nbsp;&nbsp;@@BASIS@@ 기준</span>
- <span><span class="tag t완납">완납</span><b>입금 완료</b></span>
- <span><span class="tag t진행">진행</span><b>결제기한 내(미수 아님)</b></span>
- <span><span class="tag t미수">미수</span><b>결제기한 경과</b></span>
- <span><span class="tag t장기미수">장기미수</span><b>결제기한 1개월 이상 경과</b></span>
-</div>
+@@ADMINBADGE@@<div id=hsub style="font-size:11px;color:#6b7280;letter-spacing:normal;margin:9px 0 14px"><b style="color:#334155;white-space:nowrap">현재 자료</b>&nbsp;&nbsp;@@BASIS@@ 기준</div>
 <div class=kpis>
  <div class='kpi hi'><div class=k id=kLab1>전체 총 미수액</div><div class=v id=kAmt>8.2억<small>원</small></div><div class=x id=kAmtSub>818,564,943원 · 미수+장기미수 기준</div></div>
  <div class='kpi click' data-f=unpaid id=kall><div class=k id=kLab2>전체 미수 거래처</div><div class=v><span id=kUnp>33</span><small>곳</small></div></div>
@@ -92,6 +87,13 @@ tr.main{cursor:pointer} tr.main:hover{background:#fafafa}
   <div class=chip data-f=장기미수 onclick='setF(this)'>장기미수 <b class=cc>25</b></div>
   <div class=chip data-f=진행 onclick='setF(this)'>진행 <b class=cc>54</b></div>
   <div class=chip data-f=완납 onclick='setF(this)'>완납 <b class=cc>215</b></div>
+ </div>
+ <span class=tooldiv></span>
+ <div class=stlegend>
+  <span><span class="tag t완납">완납</span><b>입금 완료</b></span>
+  <span><span class="tag t진행">진행</span><b>결제기한 내(미수 아님)</b></span>
+  <span><span class="tag t미수">미수</span><b>결제기한 경과</b></span>
+  <span><span class="tag t장기미수">장기미수</span><b>결제기한 1개월 이상 경과</b></span>
  </div>
 </div>
 
