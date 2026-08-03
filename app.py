@@ -1385,9 +1385,21 @@ def page_process():
    컨테이너 key를 "pcard-*"로 통일해 하나의 셀렉터로 일괄 스타일링(부분일치 [class*=]). */
 .stApp [class*="st-key-pcard-"],.stApp .st-key-data_upload_card{
   border:1px solid #e5e9f0!important;background:#fff!important;border-radius:0!important;
-  box-shadow:0 1px 3px rgba(0,0,0,.06)!important;padding:16px 16px 18px!important;margin-bottom:14px!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.06)!important;padding:12px 16px 13px!important;margin-bottom:0!important;
   height:100%!important;box-sizing:border-box!important;}
-.stApp [class*="st-key-pcard-"] .misu-sec-title,.stApp .st-key-data_upload_card .misu-sec-title{margin:0 0 12px!important;}
+.stApp [class*="st-key-pcard-"] .misu-sec-title,.stApp .st-key-data_upload_card .misu-sec-title{margin:0 0 8px!important;}
+/* 행 간격 축소(2026-08-03, "스크롤 없이 한 화면에" 요청) — 자료처리 페이지에서만, 최상위 블록 간
+   기본 gap(16px)을 줄임. 이 페이지 함수 안에서만 주입되는 스타일이라 다른 탭에는 영향 없음. */
+[data-testid='stMainBlockContainer']>[data-testid='stVerticalBlock']{gap:8px!important;}
+/* 1행(거래처 검색·개별 다운로드 / 전체 zip 다운로드) 카드 높이를 서로 맞춤 — 컬럼 stretch 강제.
+   이 규칙은 row1_grid 안에서만 적용되어 다른 행의 중첩 컬럼(비상복구 버튼 2열 등)에는 영향 없음. */
+.stApp .st-key-row1_grid [data-testid="stHorizontalBlock"]{align-items:stretch!important;}
+.stApp .st-key-row1_grid [data-testid="stColumn"]{display:flex!important;flex-direction:column!important;}
+.stApp .st-key-row1_grid [data-testid="stColumn"]>div,
+.stApp .st-key-row1_grid [data-testid="stLayoutWrapper"]{display:flex!important;flex-direction:column!important;flex:1 1 auto!important;}
+.stApp .st-key-row1_grid [class*="st-key-pcard-"]{flex:1 1 auto!important;}
+/* 카드 제목 옆에 설명을 한 줄로 붙일 때(예: 수동 교체) 쓰는 보조 텍스트 — 제목과 같은 줄, 얇고 옅은 회색 */
+.misu-sec-title .sec-desc{font-size:12px;font-weight:400;color:#6b7280;letter-spacing:0;margin-left:10px;}
 </style>""", unsafe_allow_html=True)
     header(title="자료 처리")
     if ADMIN:
@@ -1395,28 +1407,29 @@ def page_process():
     if DATA_REPO and GIT_TOKEN and not _data_repo_dir():
         st.error("⚠ 자료 저장소(chjk-data) 연결 실패 — Secrets의 github_token 권한(chjk-data Contents: Read and write)과 github_data_repo 값을 확인하세요.")
 
-    # ── 1행: 조회 · 다운로드 (거래처 검색·개별 다운로드 / 전체 zip) — 일반·관리자 공통, 2열 ──
-    row1_a, row1_b = st.columns(2)
-    with row1_a:
-        with st.container(key="pcard-search"):
-            st.markdown("<div class='misu-sec-title'>거래처 검색 · 개별 다운로드</div>", unsafe_allow_html=True)
-            files = all_company_files()
-            _label_map = {}
-            for loc, f, n in files:
-                _label_map[_cust_label(loc, n)] = (f, n)
-            _opts = list(_label_map.keys())
-            sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · 엔터(또는 클릭) 후 바로 입력하면 새로 검색됩니다",
-                               _opts, index=None, placeholder="거래처 검색…", key="cust_sel")
-            if sel and sel in _label_map:
-                f, n = _label_map[sel]
-                with open(f, "rb") as fh:
-                    st.download_button(f"{sel} 다운로드", fh.read(), file_name=n, key="dl_sel",
-                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    with row1_b:
-        with st.container(key="pcard-zip"):
-            st.markdown("<div class='misu-sec-title'>현재 누적자료 전체 다운로드 (zip)</div>", unsafe_allow_html=True)
-            if os.path.isdir(DATA):
-                st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
+    # ── 1행: 조회 · 다운로드 (거래처 검색·개별 다운로드 / 전체 zip) — 일반·관리자 공통, 2열, 높이 통일 ──
+    with st.container(key="row1_grid"):
+        row1_a, row1_b = st.columns(2)
+        with row1_a:
+            with st.container(key="pcard-search"):
+                st.markdown("<div class='misu-sec-title'>거래처 검색 · 개별 다운로드</div>", unsafe_allow_html=True)
+                files = all_company_files()
+                _label_map = {}
+                for loc, f, n in files:
+                    _label_map[_cust_label(loc, n)] = (f, n)
+                _opts = list(_label_map.keys())
+                sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · 엔터(또는 클릭) 후 바로 입력하면 새로 검색됩니다",
+                                   _opts, index=None, placeholder="거래처 검색…", key="cust_sel")
+                if sel and sel in _label_map:
+                    f, n = _label_map[sel]
+                    with open(f, "rb") as fh:
+                        st.download_button(f"{sel} 다운로드", fh.read(), file_name=n, key="dl_sel",
+                                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        with row1_b:
+            with st.container(key="pcard-zip"):
+                st.markdown("<div class='misu-sec-title'>현재 누적자료 전체 다운로드 (zip)</div>", unsafe_allow_html=True)
+                if os.path.isdir(DATA):
+                    st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
 
     # ── 2행: 복구 · 재계산 — 비상 복구는 공통 노출(복구 실행 버튼만 관리자 전용),
     #    전체 다시 계산은 카드 자체가 관리자 전용이라 관리자일 때만 2열, 아니면 비상 복구 카드가 전체 폭 ──
@@ -1485,9 +1498,11 @@ def page_process():
         # ── 3행: 수동 교체 — 관리자 전용, 전체 폭 (파일 여러 개 + 목록이라 2열보다 전체 폭이 편함) ──
         _md = st.session_state.pop("manual_done", None)
         with st.container(key="pcard-manual"):
-            st.markdown("<div class='misu-sec-title'>거래처 파일 직접 수정 후 업로드 (수동 교체)</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='misu-sec-title'>거래처 파일 직접 수정 후 업로드 (수동 교체)"
+                "<span class='sec-desc'>거래처 파일을 받아 직접 고친 뒤 여기 올리면 그 거래처를 교체합니다. "
+                "사업자번호로 자동 인식하며, 교체 전 직전본이 백업됩니다.</span></div>", unsafe_allow_html=True)
             if _md: st.success(_md)
-            st.caption("거래처 파일을 받아 직접 고친 뒤 여기 올리면 그 거래처를 교체합니다. 사업자번호로 자동 인식하며, 교체 전 직전본이 백업됩니다.")
             m_ups = st.file_uploader("수정한 거래처 파일(.xlsx) 업로드", accept_multiple_files=True, type=["xlsx"], key="manual_edit")
             if m_ups:
                 parsed = []
