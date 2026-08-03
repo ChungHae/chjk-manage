@@ -1379,6 +1379,15 @@ def page_process():
 .stApp .st-key-cust_sel input[role="combobox"]{color:#14305c!important;font-size:13px!important;font-family:inherit!important;background:transparent!important;}
 .stApp .st-key-cust_sel input[role="combobox"]::placeholder{color:#aab4c2!important;}
 .stApp .st-key-cust_sel button[aria-label="Open"]{background:transparent!important;}
+/* ── 자료처리 도구 카드(2026-08-03 재구성): 아코디언(expander, 2회 클릭 필요) 전면 폐지 —
+   미수·매출현황의 .card / misu-sec-title과 동일한 언어(흰 배경·1px #e5e9f0·radius 0·옅은 그림자)로
+   항상 펼쳐진 카드를 만들고, 관련 도구끼리 2열 그리드로 묶어 다른 탭처럼 한 화면에 그대로 노출한다.
+   컨테이너 key를 "pcard-*"로 통일해 하나의 셀렉터로 일괄 스타일링(부분일치 [class*=]). */
+.stApp [class*="st-key-pcard-"],.stApp .st-key-data_upload_card{
+  border:1px solid #e5e9f0!important;background:#fff!important;border-radius:0!important;
+  box-shadow:0 1px 3px rgba(0,0,0,.06)!important;padding:16px 16px 18px!important;margin-bottom:14px!important;
+  height:100%!important;box-sizing:border-box!important;}
+.stApp [class*="st-key-pcard-"] .misu-sec-title,.stApp .st-key-data_upload_card .misu-sec-title{margin:0 0 12px!important;}
 </style>""", unsafe_allow_html=True)
     header(title="자료 처리")
     if ADMIN:
@@ -1386,81 +1395,97 @@ def page_process():
     if DATA_REPO and GIT_TOKEN and not _data_repo_dir():
         st.error("⚠ 자료 저장소(chjk-data) 연결 실패 — Secrets의 github_token 권한(chjk-data Contents: Read and write)과 github_data_repo 값을 확인하세요.")
 
-    with st.expander("거래처 검색 · 개별 다운로드", expanded=False):
-        files = all_company_files()
-        _label_map = {}
-        for loc, f, n in files:
-            _label_map[_cust_label(loc, n)] = (f, n)
-        _opts = list(_label_map.keys())
-        sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · 엔터(또는 클릭) 후 바로 입력하면 새로 검색됩니다",
-                           _opts, index=None, placeholder="거래처 검색…", key="cust_sel")
-        if sel and sel in _label_map:
-            f, n = _label_map[sel]
-            with open(f, "rb") as fh:
-                st.download_button(f"{sel} 다운로드", fh.read(), file_name=n, key="dl_sel",
-                                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    # ── 1행: 조회 · 다운로드 (거래처 검색·개별 다운로드 / 전체 zip) — 일반·관리자 공통, 2열 ──
+    row1_a, row1_b = st.columns(2)
+    with row1_a:
+        with st.container(key="pcard-search"):
+            st.markdown("<div class='misu-sec-title'>거래처 검색 · 개별 다운로드</div>", unsafe_allow_html=True)
+            files = all_company_files()
+            _label_map = {}
+            for loc, f, n in files:
+                _label_map[_cust_label(loc, n)] = (f, n)
+            _opts = list(_label_map.keys())
+            sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · 엔터(또는 클릭) 후 바로 입력하면 새로 검색됩니다",
+                               _opts, index=None, placeholder="거래처 검색…", key="cust_sel")
+            if sel and sel in _label_map:
+                f, n = _label_map[sel]
+                with open(f, "rb") as fh:
+                    st.download_button(f"{sel} 다운로드", fh.read(), file_name=n, key="dl_sel",
+                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    with row1_b:
+        with st.container(key="pcard-zip"):
+            st.markdown("<div class='misu-sec-title'>현재 누적자료 전체 다운로드 (zip)</div>", unsafe_allow_html=True)
+            if os.path.isdir(DATA):
+                st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
 
-    with st.expander("현재 누적자료 전체 다운로드 (zip)", expanded=False):
-        if os.path.isdir(DATA):
-            st.download_button("전체 누적본 다운로드 (서울·화성 거래처)", zip_bytes(DATA, ["서울", "화성"]), file_name="누적자료_현재본.zip", mime="application/zip", key="dl_all")
-
-    with st.expander("비상 복구 (직전본)", expanded=bool(st.session_state.get("confirm_restore"))):
-        if os.path.exists(BACKUP_ZIP):
-            st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
-            bc1, bc2 = st.columns(2)
-            bc1.download_button("직전본 다운로드 (서울·화성)", zip_backup_customers(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
-            if ADMIN and bc2.button("직전본으로 복구"):
-                st.session_state["confirm_restore"] = True
-            if ADMIN and st.session_state.get("confirm_restore"):
-                st.warning("직전본으로 되돌리면 현재 누적본이 직전 상태로 바뀝니다. 정말 실행하시겠습니까?")
-                rc1, rc2 = st.columns(2)
-                if rc1.button("예, 복구 실행", type="primary", key="do_restore"):
-                    st.session_state.pop("confirm_restore", None)
-                    if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
-                        if GIT_TOKEN: store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "restore previous baseline")
-                        st.session_state.pop("result", None)
-                        st.success("직전본으로 복구했습니다."); st.rerun()
-                if rc2.button("취소", key="cancel_restore"):
-                    st.session_state.pop("confirm_restore", None); st.rerun()
-        else:
-            st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
-
+    # ── 2행: 복구 · 재계산 — 비상 복구는 공통 노출(복구 실행 버튼만 관리자 전용),
+    #    전체 다시 계산은 카드 자체가 관리자 전용이라 관리자일 때만 2열, 아니면 비상 복구 카드가 전체 폭 ──
     if ADMIN:
-        with st.expander("전체 다시 계산 (설정 변경 반영)"):
-            st.caption("결제조건·별칭 등 설정만 바꿨을 때, 업로드 없이 전체 거래처의 상태·파일명을 현재 기준일로 다시 계산합니다.")
-            if st.button("전체 다시 계산 실행", key="recalc_all"):
-                old = {}
-                for loc in ["서울", "화성"]:
-                    for f in glob.glob(os.path.join(DATA, loc, "*.xlsx")):
-                        nm = os.path.basename(f)
-                        if nm.startswith("_"): continue
-                        mb = re.search(r"(\d{3}-\d{2}-\d{5})", nm)
-                        if mb:
-                            old[mb.group(1)] = ("완납" if "완납" in nm else "장기미수" if "장기미수" in nm else "미수" if "미수" in nm else "진행")
-                work = tempfile.mkdtemp(); out_dir = os.path.join(work, "out"); os.makedirs(out_dir, exist_ok=True)
-                with st.spinner("전체 거래처 다시 계산 중… (수십 초)"):
-                    try:
-                        res = pipeline.process({"서울": [], "화성": []}, DATA, out_dir, ref_date=basis_date())
-                        ok, probs = pipeline.verify(out_dir, DATA)
-                    except Exception as e:
-                        ok = False; probs = [str(e)]
-                if ok:
-                    changes = [(s[0], s[1], old.get(s[2], "?"), s[3]) for s in res["summary"] if old.get(s[2], s[3]) != s[3]]
-                    store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
-                    saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "recompute all statuses")
-                    st.cache_data.clear()
-                    note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
-                    if changes:
-                        st.success(f"전체 다시 계산 완료 — {len(changes)}곳 상태가 바뀌었습니다." + note)
-                        cdf = pd.DataFrame(changes, columns=["지역", "거래처", "이전", "변경"]).sort_values(["지역", "거래처"]).reset_index(drop=True)
-                        st.dataframe(cdf, use_container_width=True, hide_index=True)
+        row2_a, row2_b = st.columns(2)
+    else:
+        row2_a, row2_b = st.container(), None
+    with row2_a:
+        with st.container(key="pcard-restore"):
+            st.markdown("<div class='misu-sec-title'>비상 복구 (직전본)</div>", unsafe_allow_html=True)
+            if os.path.exists(BACKUP_ZIP):
+                st.caption("최근 갱신 직전 상태가 백업되어 있습니다. 문제가 생기면 한 번에 되돌릴 수 있어요.")
+                bc1, bc2 = st.columns(2)
+                bc1.download_button("직전본 다운로드 (서울·화성)", zip_backup_customers(), file_name="누적자료_직전본.zip", mime="application/zip", key="dl_bak")
+                if ADMIN and bc2.button("직전본으로 복구"):
+                    st.session_state["confirm_restore"] = True
+                if ADMIN and st.session_state.get("confirm_restore"):
+                    st.warning("직전본으로 되돌리면 현재 누적본이 직전 상태로 바뀝니다. 정말 실행하시겠습니까?")
+                    rc1, rc2 = st.columns(2)
+                    if rc1.button("예, 복구 실행", type="primary", key="do_restore"):
+                        st.session_state.pop("confirm_restore", None)
+                        if store.restore_previous(DATA, DATA_ZIP, BACKUP_ZIP):
+                            if GIT_TOKEN: store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "restore previous baseline")
+                            st.session_state.pop("result", None)
+                            st.success("직전본으로 복구했습니다."); st.rerun()
+                    if rc2.button("취소", key="cancel_restore"):
+                        st.session_state.pop("confirm_restore", None); st.rerun()
+            else:
+                st.caption("아직 직전본 백업이 없습니다. (첫 갱신 후 생성됩니다)")
+    if ADMIN:
+        with row2_b:
+            with st.container(key="pcard-recalc"):
+                st.markdown("<div class='misu-sec-title'>전체 다시 계산 (설정 변경 반영)</div>", unsafe_allow_html=True)
+                st.caption("결제조건·별칭 등 설정만 바꿨을 때, 업로드 없이 전체 거래처의 상태·파일명을 현재 기준일로 다시 계산합니다.")
+                if st.button("전체 다시 계산 실행", key="recalc_all"):
+                    old = {}
+                    for loc in ["서울", "화성"]:
+                        for f in glob.glob(os.path.join(DATA, loc, "*.xlsx")):
+                            nm = os.path.basename(f)
+                            if nm.startswith("_"): continue
+                            mb = re.search(r"(\d{3}-\d{2}-\d{5})", nm)
+                            if mb:
+                                old[mb.group(1)] = ("완납" if "완납" in nm else "장기미수" if "장기미수" in nm else "미수" if "미수" in nm else "진행")
+                    work = tempfile.mkdtemp(); out_dir = os.path.join(work, "out"); os.makedirs(out_dir, exist_ok=True)
+                    with st.spinner("전체 거래처 다시 계산 중… (수십 초)"):
+                        try:
+                            res = pipeline.process({"서울": [], "화성": []}, DATA, out_dir, ref_date=basis_date())
+                            ok, probs = pipeline.verify(out_dir, DATA)
+                        except Exception as e:
+                            ok = False; probs = [str(e)]
+                    if ok:
+                        changes = [(s[0], s[1], old.get(s[2], "?"), s[3]) for s in res["summary"] if old.get(s[2], s[3]) != s[3]]
+                        store.apply_update(out_dir, DATA, DATA_ZIP, BACKUP_ZIP)
+                        saved, msg = store.git_commit_push(_REPO_DIR, GIT_TOKEN, DATA_REPO, "recompute all statuses")
+                        st.cache_data.clear()
+                        note = "  (GitHub 영구저장 완료)" if saved else f"  (GitHub 미저장: {msg})"
+                        if changes:
+                            st.success(f"전체 다시 계산 완료 — {len(changes)}곳 상태가 바뀌었습니다." + note)
+                            cdf = pd.DataFrame(changes, columns=["지역", "거래처", "이전", "변경"]).sort_values(["지역", "거래처"]).reset_index(drop=True)
+                            st.dataframe(cdf, use_container_width=True, hide_index=True)
+                        else:
+                            st.success("전체 다시 계산 완료 — 바뀐 상태가 없습니다." + note)
                     else:
-                        st.success("전체 다시 계산 완료 — 바뀐 상태가 없습니다." + note)
-                else:
-                    st.error("재계산 검증 실패 — 반영하지 않았습니다."); st.write(probs[:10])
+                        st.error("재계산 검증 실패 — 반영하지 않았습니다."); st.write(probs[:10])
 
+        # ── 3행: 수동 교체 — 관리자 전용, 전체 폭 (파일 여러 개 + 목록이라 2열보다 전체 폭이 편함) ──
         _md = st.session_state.pop("manual_done", None)
-        with st.expander("거래처 파일 직접 수정 후 업로드 (수동 교체)", expanded=bool(_md)):
+        with st.container(key="pcard-manual"):
+            st.markdown("<div class='misu-sec-title'>거래처 파일 직접 수정 후 업로드 (수동 교체)</div>", unsafe_allow_html=True)
             if _md: st.success(_md)
             st.caption("거래처 파일을 받아 직접 고친 뒤 여기 올리면 그 거래처를 교체합니다. 사업자번호로 자동 인식하며, 교체 전 직전본이 백업됩니다.")
             m_ups = st.file_uploader("수정한 거래처 파일(.xlsx) 업로드", accept_multiple_files=True, type=["xlsx"], key="manual_edit")
@@ -1485,6 +1510,7 @@ def page_process():
                     st.toast(f"{len(good)}개 거래처 교체 완료 ✅")
                     st.rerun()
 
+        # ── 4행: 자료 업로드 — 관리자 전용 메인 기능, 전체 폭 (기존과 동일한 카드) ──
         with st.container(key="data_upload_card"):
             st.markdown("<div class='misu-sec-title'>자료 업로드</div>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
