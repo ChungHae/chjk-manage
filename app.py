@@ -1424,7 +1424,7 @@ def page_process():
                 for loc, f, n in files:
                     _label_map[_cust_label(loc, n)] = (f, n)
                 _opts = list(_label_map.keys())
-                sel = st.selectbox(f"거래처명 일부만 입력하면 자동으로 후보가 나옵니다 (전체 {len(files)}곳) · 엔터(또는 클릭) 후 바로 입력하면 새로 검색됩니다",
+                sel = st.selectbox("거래처명 일부만 입력하면 자동으로 후보가 나옵니다. 엔터(또는 클릭) 후 바로 입력하면 새로 검색됩니다.",
                                    _opts, index=None, placeholder="거래처 검색…", key="cust_sel")
                 if sel and sel in _label_map:
                     f, n = _label_map[sel]
