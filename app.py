@@ -1345,6 +1345,19 @@ def _render_alias_editor(udf):
 
 # ===== 자료 처리 페이지 =====
 def page_process():
+    # 자료 처리도 미수·매출 현황과 동일하게 가로 전체 폭 사용 (컨테이너 1320px 제한 해제 + 업무관리 좌우 여백)
+    st.markdown("""<style>
+[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:100%!important;padding-left:24px!important;padding-right:24px!important;}
+@media(max-width:1024px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:14px!important;padding-right:14px!important;}}
+@media(max-width:700px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:8px!important;padding-right:8px!important;}}
+/* 거래처 검색(개별 다운로드) — 플랫 툴바 검색창 디자인(업무관리 재고검색창/미수·매출현황 거래처검색과 동일) */
+.stApp .st-key-cust_sel{background:#fff!important;border:0!important;border-bottom:1px solid #e5e5e5!important;box-shadow:0 2px 6px rgba(15,23,42,.06)!important;padding:4px 14px!important;box-sizing:border-box!important;border-radius:0!important;}
+.stApp .st-key-cust_sel div[data-baseweb="select"]>div:first-child{border:none!important;background:transparent!important;box-shadow:none!important;padding:4px 6px!important;}
+.stApp .st-key-cust_sel div[data-baseweb="select"]>div:first-child:hover{background:rgba(27,58,107,.045)!important;}
+.stApp .st-key-cust_sel div[data-baseweb="select"][aria-expanded="true"]>div:first-child,
+.stApp .st-key-cust_sel div[data-baseweb="select"]>div:first-child:focus-within{background:#f2f4f7!important;border:none!important;}
+.stApp .st-key-cust_sel div[data-baseweb="select"] input::placeholder{color:#aab4c2!important;}
+</style>""", unsafe_allow_html=True)
     header(title="자료 처리")
     if ADMIN:
         st.caption("매출·매입 세금계산서, 어음수취내역, 은행거래내역을 올리면 자동으로 종류를 판별하고 기존 자료에 신규만 추가합니다.")
