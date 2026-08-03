@@ -1394,6 +1394,10 @@ def page_process():
    내장 여백이 있어 다른 카드의 순수 caption보다 시각적으로 더 아래에서 시작함(라이브 실측 차이 6px).
    이 차이만큼 다른 카드의 캡션에 margin-top을 더해 검색 카드와 같은 줄에 오도록 보정. */
 .stApp [class*="st-key-pcard-"] [data-testid="stCaptionContainer"]{margin-top:6px!important;}
+/* 1행·2행 배경박스 높이 통일(2026-08-03): 1행(거래처 검색·zip)은 row1_grid stretch로 120px —
+   2행(비상복구·전체 다시계산)은 내용이 더 짧아 자연 높이가 106.38px이라 그대로 두면 1행보다
+   낮게 보임. 2행 카드에 1행과 동일한 min-height를 지정해 배경박스 높이를 맞춤. */
+.stApp [class*="st-key-pcard-restore"],.stApp [class*="st-key-pcard-recalc"]{min-height:120px!important;}
 /* 행 간격 축소(2026-08-03, "스크롤 없이 한 화면에" 요청) — 자료처리 페이지에서만, 최상위 블록 간
    기본 gap(16px)을 줄임. 이 페이지 함수 안에서만 주입되는 스타일이라 다른 탭에는 영향 없음. */
 [data-testid='stMainBlockContainer']>[data-testid='stVerticalBlock']{gap:6px!important;}
