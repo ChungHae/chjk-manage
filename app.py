@@ -1371,7 +1371,11 @@ def page_process():
    플랫 툴바(흰 배경·하단 1px #e5e5e5·그림자 0 2px 6px)+내부는 테두리 없이 투명, 글자색 #14305c, 13px.
    (Streamlit 셀렉트박스 DOM이 BaseWeb div → React Aria ComboBox[role=group][data-rac]+input[role=combobox]로
    바뀌어 셀렉터를 새 구조로 갱신함 — 2026-08-03) */
-.stApp .st-key-cust_sel{background:#fff!important;border:0!important;border-bottom:1px solid #e5e5e5!important;box-shadow:0 2px 6px rgba(15,23,42,.06)!important;padding:4px 14px!important;box-sizing:border-box!important;border-radius:0!important;}
+.stApp .st-key-cust_sel{background:#fff!important;border:0!important;border-bottom:1px solid #e5e5e5!important;box-shadow:0 2px 6px rgba(15,23,42,.06)!important;padding:0 14px 4px!important;box-sizing:border-box!important;border-radius:0!important;}
+/* 1행 정렬 보정(2026-08-03): 검색창 라벨의 내장 상단 여백·센터링을 제거해 옆 카드(zip)의
+   설명글·버튼과 같은 줄에 나오도록 맞춤 (컨테이너 top-padding 4→0, 라벨 min-height 0, 라벨 하단
+   여백을 zip 카드의 캡션→버튼 시작 위치와 픽셀 일치하도록 지정). */
+.stApp .st-key-cust_sel [data-testid="stWidgetLabel"]{min-height:0!important;margin-bottom:5px!important;}
 .stApp .st-key-cust_sel [role="group"][data-rac]{border:none!important;background:transparent!important;box-shadow:none!important;padding:4px 6px!important;}
 .stApp .st-key-cust_sel [role="group"][data-rac]:hover{background:rgba(27,58,107,.045)!important;}
 .stApp .st-key-cust_sel [role="group"][data-rac]:has(>input[aria-expanded="true"]),
