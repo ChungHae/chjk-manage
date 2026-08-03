@@ -1385,12 +1385,12 @@ def page_process():
    컨테이너 key를 "pcard-*"로 통일해 하나의 셀렉터로 일괄 스타일링(부분일치 [class*=]). */
 .stApp [class*="st-key-pcard-"],.stApp .st-key-data_upload_card{
   border:1px solid #e5e9f0!important;background:#fff!important;border-radius:0!important;
-  box-shadow:0 1px 3px rgba(0,0,0,.06)!important;padding:12px 16px 13px!important;margin-bottom:0!important;
-  height:100%!important;box-sizing:border-box!important;}
-.stApp [class*="st-key-pcard-"] .misu-sec-title,.stApp .st-key-data_upload_card .misu-sec-title{margin:0 0 8px!important;}
+  box-shadow:0 1px 3px rgba(0,0,0,.06)!important;padding:10px 16px 11px!important;margin-bottom:0!important;
+  height:100%!important;box-sizing:border-box!important;gap:6px!important;}
+.stApp [class*="st-key-pcard-"] .misu-sec-title,.stApp .st-key-data_upload_card .misu-sec-title{margin:0 0 6px!important;}
 /* 행 간격 축소(2026-08-03, "스크롤 없이 한 화면에" 요청) — 자료처리 페이지에서만, 최상위 블록 간
    기본 gap(16px)을 줄임. 이 페이지 함수 안에서만 주입되는 스타일이라 다른 탭에는 영향 없음. */
-[data-testid='stMainBlockContainer']>[data-testid='stVerticalBlock']{gap:8px!important;}
+[data-testid='stMainBlockContainer']>[data-testid='stVerticalBlock']{gap:6px!important;}
 /* 1행(거래처 검색·개별 다운로드 / 전체 zip 다운로드) 카드 높이를 서로 맞춤 — 컬럼 stretch 강제.
    이 규칙은 row1_grid 안에서만 적용되어 다른 행의 중첩 컬럼(비상복구 버튼 2열 등)에는 영향 없음. */
 .stApp .st-key-row1_grid [data-testid="stHorizontalBlock"]{align-items:stretch!important;}
