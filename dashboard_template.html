@@ -192,7 +192,9 @@ function visTop(){try{return (window.top.scrollY||window.top.pageYOffset||0)-top
 function centerModal(el){
   var o=0,w=window;
   try{while(w!==window.top&&w.frameElement){o+=w.frameElement.getBoundingClientRect().top;w=w.parent;}}catch(e){}
-  var vh; try{vh=window.top.innerHeight||window.innerHeight;}catch(e){vh=window.innerHeight;}
+  var vh=0; try{vh=window.top.innerHeight||window.top.document.documentElement.clientHeight||0;}catch(e){}
+  if(!vh) vh=window.innerHeight;
+  el.style.maxHeight=Math.round(vh*0.82)+'px';  /* 최대 높이도 '보이는 화면' 기준(82%) */
   var c=(-o)+vh/2;
   el.style.top=c+'px';
   requestAnimationFrame(function(){
