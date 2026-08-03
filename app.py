@@ -1117,6 +1117,13 @@ def _sales_html(_fp, basis_iso, admin):
     return _sales.render(DATA, admin=admin, basis_iso=basis_iso)
 
 def page_sales():
+    # 매출 현황도 미수 현황과 동일하게 가로 전체 폭 사용 (컨테이너 1320px 제한 해제 + 업무관리 좌우 여백)
+    st.markdown("""<style>
+[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{max-width:100%!important;padding-left:24px!important;padding-right:24px!important;}
+[data-testid='stIFrame']{width:100%!important;}
+@media(max-width:1024px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:14px!important;padding-right:14px!important;}}
+@media(max-width:700px){[data-testid='stMainBlockContainer'],.stMainBlockContainer,.block-container{padding-left:8px!important;padding-right:8px!important;}}
+</style>""", unsafe_allow_html=True)
     if not os.path.isdir(DATA):
         header(title="매출 현황"); st.error("자료를 불러올 수 없습니다."); return
     if not os.path.exists(os.path.join(DATA, "_매출자료.json")):
