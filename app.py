@@ -1040,7 +1040,7 @@ def _dev_reload():
 
 _dev_reload()   # 매 실행(rerun)마다 로컬에서만 변경 감지
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)   # 1시간 TTL: 월 중순(15일) 전환이 캐시에 묶이지 않게
 def _sales_summary_data(_fp):
     try:
         import sales as _sales
@@ -1065,18 +1065,24 @@ def _sales_summary_data(_fp):
                         if (z.get("매출액") or 0) > 0]
         except Exception:
             top_year = []
-        # 최근월 매출 상위: 누적분(_매출집계.json)의 해당 월 세금계산서를 업체별 합산.
-        # (과거자료 경계 이전 월은 업체별 월 자료가 없어 빈 값 → 그래프 자동 숨김)
+        # 월별 매출 상위: 누적분(_매출집계.json)의 해당 월 세금계산서를 업체별 합산.
+        # 표시할 달은 매달 15일(중순)을 기점으로 전환 — 8월 중순~9월 중순엔 7월,
+        # 9월 중순~10월 중순엔 8월 (계산서가 익월 중순쯤 입력 완료되는 흐름에 맞춤).
+        # 해당 월 자료가 아직 없으면 한 달 더 전으로 물러난다. (자료 없으면 그래프 자동 숨김)
         top_month = []; top_month_label = ""
         try:
-            if lm:
-                import json as _j
-                mi = int(str(lm.get("월")).replace("월", ""))
-                sp = os.path.join(DATA, "_매출집계.json")
-                if os.path.exists(sp):
-                    with open(sp, encoding="utf-8") as _fh:
-                        _store = _j.load(_fh)
-                    _ymk = f"{cy}-{mi:02d}"; _mm = {}
+            import json as _j
+            _t = datetime.date.today()
+            _back = 1 if _t.day >= 15 else 2
+            _ty, _tm = _t.year, _t.month - _back
+            while _tm <= 0:
+                _tm += 12; _ty -= 1
+            sp = os.path.join(DATA, "_매출집계.json")
+            if os.path.exists(sp):
+                with open(sp, encoding="utf-8") as _fh:
+                    _store = _j.load(_fh)
+                for _try in range(2):   # 대상 월 → 자료 없으면 그 전 달까지 한 번 더
+                    _ymk = f"{_ty}-{_tm:02d}"; _mm = {}
                     for _rec in (_store.get("매출") or {}).values():
                         if _rec.get("ym", "") != _ymk: continue
                         if _rec.get("reg") not in ("서울", "화성"): continue
@@ -1089,7 +1095,11 @@ def _sales_summary_data(_fp):
                                        key=lambda z: -z["a"])[:8]
                     top_month = [z for z in top_month if z["a"] > 0]
                     if top_month:
-                        top_month_label = f"{cy}년 {mi}월"
+                        top_month_label = f"{_ty}년 {_tm}월"
+                        break
+                    _tm -= 1
+                    if _tm <= 0:
+                        _tm += 12; _ty -= 1
         except Exception:
             top_month = []; top_month_label = ""
         return {
