@@ -1056,6 +1056,42 @@ def _sales_summary_data(_fp):
         yrs = sorted(years.keys())[-6:]
         yearly = [{"y": y, "sales": int(sby.get(y, 0) or 0), "buy": int(buyby.get(y, 0) or 0)} for y in yrs]
         monthly = [{"m": e.get("월"), "sales": int(e.get("매출합", 0) or 0), "buy": int(e.get("매입합", 0) or 0)} for e in years.get(cy, [])]
+        # ── 업무관리(회계>입출금) 상위업체 그래프용 (2026-08-06) ──
+        # 올해 매출 상위: build_data 의 연간 순위(rank "{연도}|전체") 상위 8곳
+        top_year = []
+        try:
+            top_year = [{"n": z["업체"], "a": int(z["매출액"])}
+                        for z in (bd.get("rank") or {}).get(f"{cy}|전체", [])[:8]
+                        if (z.get("매출액") or 0) > 0]
+        except Exception:
+            top_year = []
+        # 최근월 매출 상위: 누적분(_매출집계.json)의 해당 월 세금계산서를 업체별 합산.
+        # (과거자료 경계 이전 월은 업체별 월 자료가 없어 빈 값 → 그래프 자동 숨김)
+        top_month = []; top_month_label = ""
+        try:
+            if lm:
+                import json as _j
+                mi = int(str(lm.get("월")).replace("월", ""))
+                sp = os.path.join(DATA, "_매출집계.json")
+                if os.path.exists(sp):
+                    with open(sp, encoding="utf-8") as _fh:
+                        _store = _j.load(_fh)
+                    _ymk = f"{cy}-{mi:02d}"; _mm = {}
+                    for _rec in (_store.get("매출") or {}).values():
+                        if _rec.get("ym", "") != _ymk: continue
+                        if _rec.get("reg") not in ("서울", "화성"): continue
+                        _nm = _sales._rename(_rec.get("name") or _rec.get("biz") or "")
+                        _cn = _sales._cname(_nm) or _nm
+                        _sup = _rec.get("sup", 0) or 0
+                        if _cn in _mm: _mm[_cn][1] += _sup
+                        else: _mm[_cn] = [_nm, _sup]
+                    top_month = sorted(({"n": v[0], "a": int(v[1])} for v in _mm.values()),
+                                       key=lambda z: -z["a"])[:8]
+                    top_month = [z for z in top_month if z["a"] > 0]
+                    if top_month:
+                        top_month_label = f"{cy}년 {mi}월"
+        except Exception:
+            top_month = []; top_month_label = ""
         return {
             "sales_year": cy,
             "sales_year_total": int(sby.get(cy, 0) or 0),
@@ -1065,6 +1101,9 @@ def _sales_summary_data(_fp):
             "sales_latest_month_total": int(lm.get("매출합", 0)) if lm else 0,
             "sales_yearly": yearly,
             "sales_monthly": monthly,
+            "sales_top_year": top_year,
+            "sales_top_month": top_month,
+            "sales_top_month_label": top_month_label,
         }
     except Exception:
         return {}
