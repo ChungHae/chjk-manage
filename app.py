@@ -1057,18 +1057,11 @@ def _sales_summary_data(_fp):
         yearly = [{"y": y, "sales": int(sby.get(y, 0) or 0), "buy": int(buyby.get(y, 0) or 0)} for y in yrs]
         monthly = [{"m": e.get("월"), "sales": int(e.get("매출합", 0) or 0), "buy": int(e.get("매입합", 0) or 0)} for e in years.get(cy, [])]
         # ── 업무관리(회계>입출금) 상위업체 그래프용 (2026-08-06) ──
-        # 올해 매출 상위: build_data 의 연간 순위(rank "{연도}|전체") 상위 8곳
-        top_year = []
-        try:
-            top_year = [{"n": z["업체"], "a": int(z["매출액"])}
-                        for z in (bd.get("rank") or {}).get(f"{cy}|전체", [])[:8]
-                        if (z.get("매출액") or 0) > 0]
-        except Exception:
-            top_year = []
-        # 월별 매출 상위: 누적분(_매출집계.json)의 해당 월 세금계산서를 업체별 합산.
-        # 표시할 달은 매달 15일(중순)을 기점으로 전환 — 8월 중순~9월 중순엔 7월,
+        # 표시할 대상 월은 매달 15일(중순)을 기점으로 전환 — 8월 중순~9월 중순엔 7월,
         # 9월 중순~10월 중순엔 8월 (계산서가 익월 중순쯤 입력 완료되는 흐름에 맞춤).
-        # 해당 월 자료가 아직 없으면 한 달 더 전으로 물러난다. (자료 없으면 그래프 자동 숨김)
+        # 월별 상위 = 대상 월 한 달치, 연간 상위 = 같은 해 1월~대상 월 누적 (동일 기준 공유).
+        # 대상 월에 자료가 아직 없으면 한 달 더 전으로 물러난다. (자료 없으면 그래프 자동 숨김)
+        top_year = []; top_year_label = ""
         top_month = []; top_month_label = ""
         try:
             import json as _j
@@ -1077,31 +1070,62 @@ def _sales_summary_data(_fp):
             _ty, _tm = _t.year, _t.month - _back
             while _tm <= 0:
                 _tm += 12; _ty -= 1
+            _store = {}
             sp = os.path.join(DATA, "_매출집계.json")
             if os.path.exists(sp):
                 with open(sp, encoding="utf-8") as _fh:
                     _store = _j.load(_fh)
-                for _try in range(2):   # 대상 월 → 자료 없으면 그 전 달까지 한 번 더
-                    _ymk = f"{_ty}-{_tm:02d}"; _mm = {}
-                    for _rec in (_store.get("매출") or {}).values():
-                        if _rec.get("ym", "") != _ymk: continue
-                        if _rec.get("reg") not in ("서울", "화성"): continue
-                        _nm = _sales._rename(_rec.get("name") or _rec.get("biz") or "")
-                        _cn = _sales._cname(_nm) or _nm
-                        _sup = _rec.get("sup", 0) or 0
-                        if _cn in _mm: _mm[_cn][1] += _sup
-                        else: _mm[_cn] = [_nm, _sup]
-                    top_month = sorted(({"n": v[0], "a": int(v[1])} for v in _mm.values()),
-                                       key=lambda z: -z["a"])[:8]
-                    top_month = [z for z in top_month if z["a"] > 0]
-                    if top_month:
-                        top_month_label = f"{_ty}년 {_tm}월"
-                        break
-                    _tm -= 1
-                    if _tm <= 0:
-                        _tm += 12; _ty -= 1
+
+            def _month_vendors(_y, _m):
+                """누적분에서 해당 월 세금계산서를 업체별 합산 → {정규화명: [표시명, 합계]}"""
+                _mm = {}; _ymk = f"{_y}-{_m:02d}"
+                for _rec in (_store.get("매출") or {}).values():
+                    if _rec.get("ym", "") != _ymk: continue
+                    if _rec.get("reg") not in ("서울", "화성"): continue
+                    _nm = _sales._rename(_rec.get("name") or _rec.get("biz") or "")
+                    _cn = _sales._cname(_nm) or _nm
+                    _sup = _rec.get("sup", 0) or 0
+                    if _cn in _mm: _mm[_cn][1] += _sup
+                    else: _mm[_cn] = [_nm, _sup]
+                return _mm
+
+            _mm = {}
+            for _try in range(2):   # 대상 월 → 자료 없으면 그 전 달까지 한 번 더
+                _mm = _month_vendors(_ty, _tm)
+                if _mm: break
+                _tm -= 1
+                if _tm <= 0:
+                    _tm += 12; _ty -= 1
+            if _mm:
+                top_month = sorted(({"n": v[0], "a": int(v[1])} for v in _mm.values()),
+                                   key=lambda z: -z["a"])[:8]
+                top_month = [z for z in top_month if z["a"] > 0]
+                if top_month:
+                    top_month_label = f"{_ty}년 {_tm}월"
+
+            # 연간 누적(1월~대상 월): 과거자료 연순위(경계 월까지 포함) + 누적분(경계 이후~대상 월)
+            # ※ 과거자료(_매출자료.json)의 연순위는 경계(2026-04)까지의 누적이라 월 단위로 쪼갤 수
+            #    없지만, 대상 월은 항상 경계 이후이므로 '1~경계' + '경계 후~대상 월' = 1~대상 월이 된다.
+            _base = _sales.load_data(DATA, _REPO_DIR) or {}
+            _bnd = _sales._boundary(_base)
+            _lists = [(_base.get("rank") or {}).get(f"{_ty}|서울", []),
+                      (_base.get("rank") or {}).get(f"{_ty}|화성", [])]
+            _ymax = f"{_ty}-{_tm:02d}"; _acc = {}
+            for _rec in (_store.get("매출") or {}).values():
+                _ym = _rec.get("ym", "")
+                if len(_ym) < 7 or _ym <= _bnd or _ym > _ymax or _ym[:4] != str(_ty): continue
+                if _rec.get("reg") not in ("서울", "화성"): continue
+                _nm = _sales._rename(_rec.get("name") or _rec.get("biz") or "")
+                _cn = _sales._cname(_nm) or _nm
+                _sup = _rec.get("sup", 0) or 0
+                if _cn in _acc: _acc[_cn][1] += _sup
+                else: _acc[_cn] = [_nm, _sup]
+            _merged = _sales._merge_rank(_lists + [[{"업체": v[0], "매출액": v[1]} for v in _acc.values()]])
+            top_year = [{"n": z["업체"], "a": int(z["매출액"])} for z in _merged[:8] if (z.get("매출액") or 0) > 0]
+            if top_year:
+                top_year_label = f"{_ty}년 1~{_tm}월" if _tm > 1 else f"{_ty}년 1월"
         except Exception:
-            top_month = []; top_month_label = ""
+            top_year = []; top_year_label = ""; top_month = []; top_month_label = ""
         return {
             "sales_year": cy,
             "sales_year_total": int(sby.get(cy, 0) or 0),
@@ -1112,6 +1136,7 @@ def _sales_summary_data(_fp):
             "sales_yearly": yearly,
             "sales_monthly": monthly,
             "sales_top_year": top_year,
+            "sales_top_year_label": top_year_label,
             "sales_top_month": top_month,
             "sales_top_month_label": top_month_label,
         }
