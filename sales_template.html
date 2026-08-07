@@ -134,14 +134,17 @@ function renderTrend(){
 function renderMonth(){
   document.getElementById("monthTitle").innerHTML=`월별 매출·매입 <span>· ${Y==="전체"?"전 기간":Y+"년"} · ${R}</span>`;
   if(Y==="전체"){document.getElementById("month").innerHTML='<div class=note>월별은 특정 연도를 선택하면 표시됩니다.</div>';return;}
-  const ms=D.years[Y]||[]; const pk=m=>R==="전체"?{s:num(m.매출서울)+num(m.매출화성),b:num(m.매입서울)+num(m.매입화성)}:R==="서울"?{s:num(m.매출서울),b:num(m.매입서울)}:{s:num(m.매출화성),b:num(m.매입화성)};
+  /* 2026-08-07: 자료 있는 달만 그리면 연도마다 카드 높이가 달라져 아래 순위 표
+     위치가 밀림(2022년만 짧았던 문제) → 항상 1~12월 고정 12줄 (빈 달은 -) */
+  const raw=D.years[Y]||[]; const pk=m=>R==="전체"?{s:num(m.매출서울)+num(m.매출화성),b:num(m.매입서울)+num(m.매입화성)}:R==="서울"?{s:num(m.매출서울),b:num(m.매입서울)}:{s:num(m.매출화성),b:num(m.매입화성)};
+  const ms=[]; for(let i=1;i<=12;i++){ const e=raw.find(m=>parseInt(m.월)===i); ms.push(e||{월:i+"월"}); }
   let mx=0; ms.forEach(m=>{const p=pk(m);mx=Math.max(mx,p.s,p.b);});
   if(!mx){document.getElementById("month").innerHTML='<div class=note>해당 자료가 없습니다.</div>';return;}
-  document.getElementById("month").innerHTML=ms.map(m=>{const p=pk(m);if(!p.s&&!p.b)return"";
+  document.getElementById("month").innerHTML=ms.map(m=>{const p=pk(m);
     return `<div class=row><div class=lab>${m.월}</div><div class=bars>`+
-      `<div class=bwrap><div class=bfill style="width:${Math.max(1,p.s/mx*100)}%;background:#1B3A6B"></div></div>`+
-      `<div class=bwrap><div class=bfill style="width:${Math.max(1,p.b/mx*100)}%;background:#9db8dd"></div></div></div>`+
-      `<div class=val>${fmt(p.s)} <span style="color:#9ca3af">/ ${fmt(p.b)}</span></div></div>`;}).join("");
+      `<div class=bwrap><div class=bfill style="width:${p.s?Math.max(1,p.s/mx*100):0}%;background:#1B3A6B"></div></div>`+
+      `<div class=bwrap><div class=bfill style="width:${p.b?Math.max(1,p.b/mx*100):0}%;background:#9db8dd"></div></div></div>`+
+      `<div class=val>${p.s?fmt(p.s):"-"} <span style="color:#9ca3af">/ ${p.b?fmt(p.b):"-"}</span></div></div>`;}).join("");
 }
 function renderRank(){
   document.getElementById("rankTitle").innerHTML=`거래처 판매 순위 TOP <span>· ${Y==="전체"?"전 기간":Y+"년"} · ${R} · 상위 20 + 기타</span>`;
