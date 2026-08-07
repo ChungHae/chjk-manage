@@ -2,12 +2,19 @@ name: Keep Streamlit app awake
 
 # Streamlit Community Cloud(무료)는 일정 시간 방문이 없으면 잠듭니다.
 # 이 워크플로가 정기적으로 실제 브라우저(Chromium)로 앱을 열어 깨어 있게 유지합니다.
-# 단순 HTTP 요청은 200만 반환하고 실제로는 안 깨어나므로 Playwright(진짜 브라우저)를 씁니다.
+#
+# 2026-08-07 개선:
+#  · 하루 2회 → 4회(6시간 간격): 스케줄 한 번이 GitHub 장애로 빠져도 잠들지 않게
+#  · 앱 화면이 iframe 안에 있어 기존 버튼 탐색이 항상 실패하던 문제 → 모든 frame 검색
+#  · 마지막에 "실제로 깨어 있는지" 검증하고, 못 깨웠으면 워크플로를 실패로 표시
+#    (녹색인데 실제론 잠들어 있는 조용한 실패 방지)
 
 on:
   schedule:
-    - cron: '0 21 * * *'      # 매일 아침 06:00 (한국시간 KST = UTC+9)
-    - cron: '0 9 * * *'       # 매일 저녁 18:00 (한국시간 KST = UTC+9)
+    - cron: '7 21 * * *'      # 06:07 KST
+    - cron: '7 3 * * *'       # 12:07 KST
+    - cron: '7 9 * * *'       # 18:07 KST
+    - cron: '7 15 * * *'      # 00:07 KST
   workflow_dispatch:            # 수동 실행 버튼
 
 jobs:
@@ -23,41 +30,78 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Visit app and click wake button if sleeping
+      - name: Visit app, click wake button in any frame, verify awake
         env:
-          # ▼▼ 실제 앱 주소로 바꿔주세요 ▼▼
           APP_URL: https://chjk-manage.streamlit.app
         run: |
           python - <<'PY'
-          import os, time
+          import os, sys
           from playwright.sync_api import sync_playwright
 
           url = os.environ["APP_URL"]
+          BTN_TEXTS = [
+              "Yes, get this app back up",
+              "get this app back up",
+              "app back up",
+              "Wake up",
+          ]
+          SLEEP_MARKERS = ["gone to sleep", "back up", "asleep"]
+
+          def click_wake(page):
+              """모든 frame(iframe 포함)에서 깨우기 버튼을 찾아 클릭. 클릭했으면 True."""
+              for fr in page.frames:
+                  for t in BTN_TEXTS:
+                      try:
+                          loc = fr.locator(f'button:has-text("{t}"), a:has-text("{t}")')
+                          if loc.count() > 0:
+                              loc.first.click()
+                              print(f"깨우기 버튼 클릭: '{t}' (frame: {fr.url[:80]})")
+                              return True
+                      except Exception:
+                          pass
+              return False
+
+          def is_sleeping(page):
+              """모든 frame의 본문에서 잠자기 문구를 찾는다."""
+              for fr in page.frames:
+                  try:
+                      body = fr.evaluate("document.body ? document.body.innerText : ''") or ""
+                      low = body.lower()
+                      for m in SLEEP_MARKERS:
+                          if m in low:
+                              print(f"잠자기 문구 발견: '{m}' (frame: {fr.url[:80]})")
+                              return True
+                  except Exception:
+                      pass
+              return False
+
           with sync_playwright() as p:
               browser = p.chromium.launch()
               page = browser.new_page()
-              page.goto(url, wait_until="networkidle", timeout=90000)
-              time.sleep(5)
+              page.goto(url, wait_until="load", timeout=90000)
+              page.wait_for_timeout(8000)
 
-              # 잠자기 화면이면 '깨우기' 버튼을 눌러 컨테이너를 깨움
-              clicked = False
-              for sel in [
-                  'button:has-text("Yes, get this app back up")',
-                  'button:has-text("get this app back up")',
-                  'button:has-text("app back up")',
-              ]:
-                  try:
-                      if page.locator(sel).count() > 0:
-                          page.locator(sel).first.click()
-                          print("깨우기 버튼 클릭됨")
-                          clicked = True
-                          page.wait_for_timeout(20000)   # 부팅 대기
-                          break
-                  except Exception as e:
-                      print("selector skip:", e)
+              if click_wake(page):
+                  print("부팅 대기 30초…")
+                  page.wait_for_timeout(30000)
+              else:
+                  print("깨우기 버튼 없음 (이미 깨어 있거나 방문만으로 깨는 방식)")
+                  page.wait_for_timeout(12000)   # 방문으로 깨는 경우 부팅 대기
 
-              if not clicked:
-                  print("이미 깨어 있음(또는 버튼 없음)")
-              print("최종 페이지 제목:", page.title())
+              # ── 검증: 새로 열어서 잠자기 화면이 아닌지 확인 ──
+              page.reload(wait_until="load")
+              page.wait_for_timeout(10000)
+              if is_sleeping(page):
+                  print("아직 잠들어 있음 → 한 번 더 깨우기 시도")
+                  click_wake(page)
+                  page.wait_for_timeout(40000)
+                  page.reload(wait_until="load")
+                  page.wait_for_timeout(10000)
+                  if is_sleeping(page):
+                      print("실패: 앱을 깨우지 못했습니다.")
+                      browser.close()
+                      sys.exit(1)
+
+              print("확인 완료: 앱이 깨어 있습니다.")
               browser.close()
           PY
